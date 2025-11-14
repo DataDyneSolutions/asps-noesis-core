@@ -107,3 +107,8 @@ print("NOESIS metrics:", result.noesis_metrics)
 for task in result.tasks:
     print(f"Stage: {task.stage}")
     print("Instructions for AI:", task.instructions)
+
+## License
+
+Apache-2.0 © 2025 Lucas Postma, DataDyne Solutions LLC.  
+See [LICENSE](./LICENSE) for full terms.
