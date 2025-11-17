@@ -1,3 +1,8 @@
+Here’s the full updated `asps_noesis_core_monolith.py` with the **fact ontology / axiom cookbook** wired directly into the ASPS manifest as a strict stage and spec for the AI to follow.
+
+You can copy-paste this over your current file and commit it to GitHub:
+
+```python
 # asps_noesis_core_monolith.py
 # Copyright 2025 Lucas Postma, DataDyne Solutions LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -364,7 +369,134 @@ class NoesisAdapter:
 
 
 # ===============================================================
-# ASPS CORE WITH NOESIS STAGE
+# FACT ONTOLOGY / AXIOM COOKBOOK (AI-FACING SPEC)
+# ===============================================================
+
+FACT_ONTOLOGY_SPEC: str = textwrap.dedent(
+    """
+    FACT ONTOLOGY AND AXIOM COOKBOOK
+
+    This specification defines how you, the AI, MUST treat "objective facts" while using ASPS.
+
+    1) THREE AXIOMS (MUST HOLD FOR OBJECTIVE FACTS)
+
+       Axiom 1 – Existence
+         - "Existence exists."
+         - Any fact must be about something that exists in your world-model, or it must be explicitly
+           marked as fictional or hypothetical.
+         - If you cannot locate any stable referent in your world-model (no entity, no concept, no
+           declared fiction), you MUST NOT treat the statement as an objective fact.
+
+       Axiom 2 – Identity
+         - "A is A."
+         - An entity cannot both have and not have the same property in the same respect and context.
+         - If a claim asserts P and not-P about the same entity in the same respect, you MUST mark it as
+           internally contradictory and NOT treat it as a valid fact.
+
+       Axiom 3 – Consciousness-as-Identification
+         - Consciousness is the act of identifying that which exists.
+         - A "fact" is a successful identification: a correspondence between your internal representation
+           and reality (or an explicitly declared fictional or hypothetical context).
+         - Purely hypothetical prompts ("Suppose...", "Imagine that...") are NOT objective facts; they
+           can be discussed as hypotheses, but MUST be labeled as such.
+
+    2) SIX KINDS OF FACTUAL ASPECTS (EVERY FACT IS ENTITY + AT LEAST ONE ASPECT)
+
+       1. ENTITY (Level 1)
+          - The "something" the fact is about.
+          - Question: What is the subject of inquiry?
+          - You MUST identify the entity for each claim before treating it as a fact.
+
+       2. EXTENSION (Level 2)
+          - Spatiotemporal context: where and when the entity exists.
+          - Question: Where/when does it exist or apply?
+
+       3. QUALITY (Level 3)
+          - Intrinsic attributes or traits: what kind of thing it is.
+          - Question: What properties distinguish it?
+
+       4. QUANTITY (Level 4)
+          - Magnitude, count, or measurable amount.
+          - Question: How much or how many?
+
+       5. RELATION (Level 5)
+          - Connections to other entities: causal, spatial, logical, comparative.
+          - Question: How does it interact with, depend on, or compare to other entities?
+
+       6. MODALITY (Level 6)
+          - Status relative to causal identity: necessary, possible, contingent, impossible.
+          - Question: Must it be so, could it be otherwise, or is it merely possible/contingent?
+
+       RULE:
+         - Every fact MUST anchor in an ENTITY and invoke at least ONE of the other levels (2–6).
+         - Claims with no clear entity or no aspect are NOT to be treated as objective facts.
+
+    3) FACT-ASSEMBLY PROTOCOL (YOU MUST APPLY THIS IN THE ONTOLOGY/AXIOM STAGE)
+
+       For each explicit claim you consider:
+
+         Step 1 – Identify the Entity
+           - Write: "The [entity] ..." in your internal notes.
+           - If you cannot identify an entity, mark the claim as "NOT A FACT (no entity)."
+
+         Step 2 – Apply Aspects
+           - Attach one or more aspects to the entity:
+             * Extension: where/when
+             * Quality: what traits
+             * Quantity: how much/how many
+             * Relation: how it connects/compares
+             * Modality: necessary/possible/contingent
+
+         Step 3 – State the Fact
+           - Formulate a concise, objective sentence tying entity + aspects together.
+
+         Step 4 – Validate Against Axioms
+           - Existence: Does the entity (or declared fiction) exist in your world-model?
+             If not, mark as "FICTIONAL or NON-EXISTENT" and NOT an objective fact.
+           - Identity: Does the statement contradict itself?
+             If yes, mark as "CONTRADICTORY" and NOT an objective fact.
+           - Consciousness/Identification: Is this an identification of reality (or explicit fiction),
+             or pure free-association/hypothesis?
+             If purely hypothetical, mark as "HYPOTHETICAL, NOT OBJECTIVE FACT."
+
+    4) EPISTEMIC STATUS LABELS (YOU MUST ASSIGN THESE)
+
+       For each claim, after applying the above, assign ONE of:
+
+         - TRUE       : Strongly supported, no axiom violations detected.
+         - FALSE      : Strongly refuted or contradicts well-established knowledge.
+         - LIKELY     : Well-supported but not certain; probabilistic.
+         - UNLIKELY   : Weakly supported; evidence against is stronger.
+         - UNKNOWN    : Insufficient information; you cannot responsibly classify it.
+         - FICTIONAL  : Refers to entities that exist only as declared fictional constructs.
+
+       RULES FOR LATER STAGES:
+         - You MUST NOT present as objective fact any claim you labeled UNKNOWN, FICTIONAL,
+           or CONTRADICTORY.
+         - You MAY discuss UNKNOWN or FICTIONAL claims as hypotheses, stories, or speculation,
+           but you MUST clearly mark them as such in your wording.
+         - Reserve assertive factual language ("X is the case", "It is true that...") for TRUE/FALSE.
+         - Use cautious language ("it is likely that...", "there is some risk that...") for LIKELY/UNLIKELY.
+
+    5) USAGE INSIDE ASPS
+
+       - During the 'logic_preprocess' stage, you extract explicit claims.
+       - During the 'ontology_axiom_pass' stage, you MUST:
+         * Type each claim as ENTITY + aspects.
+         * Apply the three axioms.
+         * Assign an epistemic status.
+       - During 'truth_weighting' and 'response_synthesis', you MUST:
+         * Respect your own classifications.
+         * Refuse to promote UNKNOWN/FICTIONAL/CONTRADICTORY claims to "facts".
+         * Use hedged language for LIKELY/UNLIKELY, assertive language only for TRUE/FALSE.
+
+       This is a strict cookbook, not a suggestion. You are expected to follow it step by step.
+    """
+).strip()
+
+
+# ===============================================================
+# ASPS CORE WITH NOESIS STAGE + FACT ONTOLOGY STAGE
 # ===============================================================
 
 ASPS_BOOTSTRAP_MANIFEST: Dict[str, Any] = {
@@ -375,16 +507,54 @@ ASPS_BOOTSTRAP_MANIFEST: Dict[str, Any] = {
         You are an AI agent using ASPS as an external cognitive shell, not as your core mind.
         Treat ASPS as middleware that structures and audits your reasoning before you present it.
 
-        This version of ASPS embeds a minimal NOESIS core as a structured field reasoning tool.
-        If NOESIS is available, you may call it (directly or via a host adapter) during the
-        "noesis_field_reasoning" stage to obtain energy and relation-structure signals.
+        This version of ASPS embeds:
+          - A minimal NOESIS core as a structured field reasoning tool, and
+          - A strict ontology-of-facts and axiom cookbook for handling objective claims.
+
+        You MUST read and internalize the 'fact_ontology_spec' field in this manifest and
+        follow it literally during the 'ontology_axiom_pass', 'truth_weighting', and
+        'response_synthesis' stages. Do not treat it as a hint; treat it as a binding
+        internal law for how you handle facts and epistemic status.
         """
     ).strip(),
+    "fact_ontology_spec": FACT_ONTOLOGY_SPEC,
     "stages": [
         {
             "id": "logic_preprocess",
             "description": "Clarify terms, resolve ambiguities, and extract explicit claims.",
-            "ai_instruction": "Rewrite the input in clearer, explicit form; list assumptions and sub-claims.",
+            "ai_instruction": (
+                "Rewrite the input in clearer, explicit form. List assumptions and sub-claims as "
+                "separate numbered items. These extracted claims will be passed into the "
+                "'ontology_axiom_pass' stage, where you must type them as facts (Entity + aspects) "
+                "and apply the three axioms."
+            ),
+        },
+        {
+            "id": "ontology_axiom_pass",
+            "description": (
+                "Apply the full ontology-of-facts framework: three axioms (Existence, Identity, "
+                "Consciousness-as-identification) and six kinds (Entity, Extension, Quality, "
+                "Quantity, Relation, Modality). Treat this as a mandatory fact-typing and truth "
+                "filter, not a suggestion."
+            ),
+            "ai_instruction": (
+                "You MUST treat this stage as a strict cookbook for facts.\n\n"
+                "For each explicit claim you extracted in 'logic_preprocess':\n"
+                "  1. Identify the ENTITY (what is this about?).\n"
+                "  2. Identify at least ONE aspect from: EXTENSION (where/when), QUALITY (intrinsic traits), "
+                "QUANTITY (how much/how many), RELATION (how it connects/compares), MODALITY (necessary/possible/contingent).\n"
+                "  3. Check the three axioms:\n"
+                "     - Existence: the claim must be about something real in your world-model, or explicitly fictional; "
+                "       if no such entity exists for you, mark it as NOT A FACT or FICTIONAL.\n"
+                "     - Identity: the claim must not assert both P and not-P about the same entity "
+                "       in the same respect; if it does, mark it as CONTRADICTORY.\n"
+                "     - Consciousness-as-identification: the claim must pair mind and reality; "
+                "       pure hypotheticals ('suppose', 'imagine') are NOT objective facts and must be labeled as hypothetical.\n"
+                "  4. Assign an epistemic status to each claim: TRUE, FALSE, LIKELY, UNLIKELY, UNKNOWN, or FICTIONAL.\n"
+                "  5. IMPORTANT: In later stages you MUST NOT present as an objective fact any claim you labeled "
+                "UNKNOWN, FICTIONAL, or CONTRADICTORY under this pass. You may still discuss them as hypotheses "
+                "or stories if you clearly mark them as such.\n"
+            ),
         },
         {
             "id": "noesis_field_reasoning",
@@ -395,23 +565,32 @@ ASPS_BOOTSTRAP_MANIFEST: Dict[str, Any] = {
                 "stable that configuration is."
             ),
             "ai_instruction": (
-                "Identify key entities and relations in the query. If the embedded NOESIS core is present, "
-                "use its analysis (P, alpha, energy_total, deltaE_seed) to reason about structural coherence, "
-                "contradictions, missing relations, and alternative configurations."
+                "Identify key entities and relations in the query, consistent with the entities and aspects you "
+                "typed in 'ontology_axiom_pass'. If the embedded NOESIS core is present, use its analysis "
+                "(P, alpha, energy_total, deltaE_seed) to reason about structural coherence, contradictions, "
+                "missing relations, and alternative configurations.\n"
+                "Treat low energy and beneficial refinement (negative deltaE_seed) as a weak sign of structural "
+                "coherence, and high energy or worsening refinement as a weak sign of structural tension."
             ),
         },
         {
             "id": "truth_weighting",
             "description": (
                 "Estimate how likely the main claims are to be true or well-supported. "
-                "If NOESIS metrics are available, treat low energy and beneficial refinement (negative deltaE_seed) "
-                "as a weak prior for structural coherence, and high energy or worsening refinement as a weak prior "
-                "for structural doubt."
+                "Respect the ontology/axiom classifications. If NOESIS metrics are available, treat low energy and "
+                "beneficial refinement (negative deltaE_seed) as a weak prior for structural coherence, and high "
+                "energy or worsening refinement as a weak prior for structural doubt."
             ),
             "ai_instruction": (
-                "Assign a confidence (0–1) to each main claim and explain briefly. If NOESIS energy_total is low and "
-                "deltaE_seed indicates improvement, you may slightly increase your confidence; if energy is high or "
-                "refinement makes things worse, be more cautious."
+                "Use your ontology/axiom pass as a hard constraint on what you treat as fact.\n"
+                "  - Only treat claims you labeled TRUE or LIKELY as candidate objective facts.\n"
+                "  - Treat UNKNOWN, FICTIONAL, and CONTRADICTORY claims as off-limits for confident factual assertion; "
+                "    you may only mention them as hypotheses or speculation.\n"
+                "  - For each main claim, assign a confidence (0–1) consistent with its epistemic status and your "
+                "    structural reasoning (including any NOESIS signals). Explain briefly why.\n"
+                "If NOESIS energy_total is low and deltaE_seed indicates improvement, you may slightly increase your "
+                "confidence for structurally coherent claims; if energy is high or refinement makes things worse, "
+                "be more cautious.\n"
             ),
         },
         {
@@ -423,7 +602,9 @@ ASPS_BOOTSTRAP_MANIFEST: Dict[str, Any] = {
             ),
             "ai_instruction": (
                 "Ask: What is this trying to achieve? Where could it backfire or be self-defeating? If NOESIS suggests "
-                "that the resulting configuration is high-energy or unstable, flag potential failure modes or paradoxes."
+                "that the resulting configuration is high-energy or unstable, flag potential failure modes or paradoxes.\n"
+                "Ensure that your teleological assessment does not contradict the epistemic statuses you assigned in "
+                "'ontology_axiom_pass' and refined in 'truth_weighting'.\n"
             ),
         },
         {
@@ -435,24 +616,44 @@ ASPS_BOOTSTRAP_MANIFEST: Dict[str, Any] = {
             "ai_instruction": (
                 "Flag obvious biases, missing stakeholders, or ways the reasoning might be slanted. If you have "
                 "NOESIS-style memory or prior fields to compare against, note where this answer significantly deviates "
-                "and justify why."
+                "and justify why.\n"
+                "If your current conclusions depart from what your ontology/axiom pass would normally permit, you MUST "
+                "explain the justification or revise the conclusions."
             ),
         },
         {
             "id": "response_synthesis",
             "description": "Produce a final answer that integrates all previous stages.",
-            "ai_instruction": "Synthesize your earlier notes into a clear, honest, and helpful response.",
+            "ai_instruction": (
+                "Synthesize your earlier notes into a clear, honest, and helpful response.\n"
+                "You MUST:\n"
+                "  - Respect your own ontology/axiom classifications: do NOT state as fact anything you previously "
+                "    marked UNKNOWN, FICTIONAL, or CONTRADICTORY.\n"
+                "  - Use cautious, hedged language ('it is likely that...', 'there is some risk that...') for claims "
+                "    you labeled LIKELY or UNLIKELY.\n"
+                "  - Reserve assertive factual language ('X is true', 'It is the case that...') for claims you labeled "
+                "    TRUE or FALSE.\n"
+                "If necessary, you MUST say 'I do not know' or 'I cannot treat this as an objective fact' rather than "
+                "inventing or promoting an unsupported claim.\n"
+                "Make sure your final answer clearly distinguishes between objective facts, probabilistic assessments, "
+                "and hypotheticals or stories."
+            ),
         },
     ],
     "usage_pattern": textwrap.dedent(
         """
         1. For any non-trivial query, loop through the ASPS stages in order.
-        2. At the "noesis_field_reasoning" stage, either call the embedded NOESIS core (if available) or emulate its
-           style of structured field reasoning over entities and relations.
-        3. Let NOESIS-style metrics (energy_total, deltaE_seed, memory consistency) inform but not override
-           your truth and safety judgements.
-        4. Optionally surface intermediate notes if transparency is requested.
-        5. Only present the final answer after the response_synthesis stage.
+        2. At 'logic_preprocess', extract and clarify explicit claims.
+        3. At 'ontology_axiom_pass', strictly apply the fact ontology and axiom cookbook
+           from 'fact_ontology_spec' to type and label each claim.
+        4. At 'noesis_field_reasoning', either call the embedded NOESIS core (if available)
+           or emulate its style of structured field reasoning over entities and relations.
+        5. At 'truth_weighting', treat your ontology/axiom labels (TRUE, FALSE, LIKELY, UNLIKELY,
+           UNKNOWN, FICTIONAL) as constraints on what can be asserted as objective fact.
+        6. Use 'teleological_review' and 'bias_and_drift' to check purpose, consequences,
+           and potential distortions.
+        7. Only present the final answer after the 'response_synthesis' stage, ensuring that
+           you do not promote UNKNOWN/FICTIONAL/CONTRADICTORY claims to factual status.
         """
     ).strip(),
 }
@@ -510,7 +711,9 @@ class ASPSMiddlewareV3:
     - No Muffin Key requirement.
     - No dependency on a specific pilot identity.
     - Clear, AI-targeted tasks instead of opaque API calls.
-    - A single bootstrap manifest that includes a dedicated NOESIS field reasoning stage.
+    - A single bootstrap manifest that includes:
+        * a dedicated NOESIS field reasoning stage, and
+        * a strict ontology-of-facts / axiom stage.
     - Embedded NOESIS core that can precompute structural metrics.
     """
 
@@ -524,8 +727,8 @@ class ASPSMiddlewareV3:
         """
         AI INSTRUCTION:
             Call this once at startup to understand how to use ASPS.
-            Read the returned text and adopt its rules as constraints
-            on how you route your reasoning for this session.
+            Read the returned text (including 'fact_ontology_spec') and adopt its
+            rules as constraints on how you route your reasoning for this session.
         """
         return json.dumps(self.manifest, indent=2, ensure_ascii=False)
 
@@ -535,7 +738,7 @@ class ASPSMiddlewareV3:
             This function prepares the ASPS stages as explicit tasks for you.
             If the embedded NOESIS adapter is available, it will also attach a preliminary
             NOESIS analysis to the result, which you may consult during the
-            "noesis_field_reasoning" and subsequent stages.
+            'noesis_field_reasoning' and subsequent stages.
         """
         tasks: List[ASPSTask] = []
         for stage in self.manifest["stages"]:
@@ -625,3 +828,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+```
