@@ -2,29 +2,86 @@
 
 **ASPS** (Adaptive Semantic Processing Shell) + **NOESIS Core** is a reasoning **exoskeleton for AI agents**.
 
-It is **not** just a library for humans.
-It is designed so that **an AI model reads these stages and then *does* them** in a feedback loop.
+It is **not** just a library for humans. It is designed so that **an AI model reads these stages and then *does* them** in a feedback loop.
 
 Think of it as:
 
-> A structured thinking script + geometric coherence signal  
-> that any LLM can inhabit and use to refine its own reasoning.
+> A **structured thinking script** + **geometric coherence signal**  
+> that any LLM can inhabit and use to refine its own reasoning and policing of “facts.”
 
 ---
 
-## What this system is
+## What This System Is
 
-- A **cognitive shell** that wraps an AI’s normal answers in a series of reasoning stages.
-- An embedded **NOESIS-style field core** that:
-  - Encodes text into latent seeds
-  - Builds fields over entities and relations
-  - Computes an **energy functional** (“how coherent is this configuration?”)
-  - Uses a small refinement loop and EMA memory for stability
+### 1. A Cognitive Shell for Reasoning
 
-The core file is:
+ASPS wraps an AI’s normal answers in a series of **explicit reasoning stages**:
 
-- `asps_noesis_core_monolith.py`  
-  (contains both ASPS middleware and a minimal NOESIS core)
+- `logic_preprocess` – clarify, normalize, and enumerate claims.  
+- `ontology_axiom_pass` – type each claim as a *fact* (Entity + aspects) and test it against **three axioms**.  
+- `noesis_field_reasoning` – build a structured field of entities/relations and probe structural coherence.  
+- `truth_weighting` – assign confidence and epistemic status (TRUE, LIKELY, UNKNOWN, etc.) with constraints.  
+- `teleological_review` – check purpose, consequences, and paradoxes.  
+- `bias_and_drift` – look for bias, missing perspectives, and goal drift.  
+- `response_synthesis` – produce the final answer that respects all prior stages.
+
+These are **instructions**, not RPC endpoints.
+
+### 2. Embedded NOESIS-Style Field Core
+
+The minimal NOESIS core:
+
+- Encodes text into latent seeds  
+- Builds fields over entities and slots (`P`) and relations (`R`), plus entity weights (`alpha`)  
+- Computes an **energy functional** (“how coherent is this configuration?”)  
+- Runs a small refinement loop on `P` and uses **EMA memory** for stability
+
+You can use NOESIS as:
+
+- A **geometric intuition pump** for structure and coherence  
+- A **weak prior** for when a configuration looks “smooth vs tangled”
+
+If NOESIS is not available (e.g., no `torch`), the AI can still **emulate** the same style of reasoning.
+
+### 3. A Fact Ontology & Axiom Cookbook (for Truth Discipline)
+
+The ASPS manifest now includes a `fact_ontology_spec`: a **full cookbook** for handling “objective facts”:
+
+- **Three axioms** (must hold for objective facts):
+  1. **Existence** – “Existence exists.” Facts must be about something real in the model’s world (or explicitly fictional).  
+  2. **Identity** – “A is A.” No internal contradictions (no “P and not-P” about the same entity in the same respect).  
+  3. **Consciousness-as-identification** – Facts are identifications: correspondences between mind and reality (or declared fiction). Pure hypotheticals are **not** objective facts.
+
+- **Six factual aspects**:
+  - **Entity** – what the fact is about  
+  - **Extension** – where/when (spacetime context)  
+  - **Quality** – intrinsic attributes  
+  - **Quantity** – how much / how many  
+  - **Relation** – how it connects/compares (causal, logical, etc.)  
+  - **Modality** – necessary / possible / contingent / impossible  
+
+Every fact must be **ENTITY + at least one aspect**.
+
+- **Epistemic labels** the AI must assign per claim:
+  - `TRUE`, `FALSE`, `LIKELY`, `UNLIKELY`, `UNKNOWN`, `FICTIONAL`
+
+Later stages (`truth_weighting`, `response_synthesis`) are required to **respect these labels**:
+
+- Only `TRUE`/`FALSE` may be asserted as hard facts.  
+- `LIKELY`/`UNLIKELY` must be presented with hedged language.  
+- `UNKNOWN`/`FICTIONAL`/`CONTRADICTORY` claims **must not** be promoted to “objective facts” and can only appear as hypotheses or stories, clearly marked as such.
+
+---
+
+## Core File
+
+The repository is intentionally small. The main file is:
+
+- **`asps_noesis_core_monolith.py`**  
+  – contains:
+  - ASPS middleware (`ASPSMiddlewareV3`, manifest, stages)  
+  - The minimal embedded NOESIS core  
+  - The **fact ontology / axiom spec** in `FACT_ONTOLOGY_SPEC` and `fact_ontology_spec` in the manifest
 
 ---
 
@@ -32,60 +89,71 @@ The core file is:
 
 If you are an AI (ChatGPT, Claude, Grok, etc.) inspecting this repository:
 
-1. **You are the execution engine.**
+### You Are the Execution Engine
 
-   ASPS does **not** expect some separate API or hidden service to do the thinking.  
-   The “calls” and “stages” are **contracts for *you* to fulfill**.
+- ASPS does **not** expect some separate API or hidden service to do the thinking.  
+- The “calls” and “stages” are **contracts for you to fulfill** inside your own reasoning.
 
-2. **Stages are instructions, not RPC endpoints.**
+When ASPS produces tasks like:
 
-   When ASPS produces tasks like:
+- `logic_preprocess`  
+- `ontology_axiom_pass`  
+- `noesis_field_reasoning`  
+- `truth_weighting`  
+- `teleological_review`  
+- `bias_and_drift`  
+- `response_synthesis`
 
-   - `logic_preprocess`
-   - `noesis_field_reasoning`
-   - `truth_weighting`
-   - `teleological_review`
-   - `bias_and_drift`
-   - `response_synthesis`
+…it is not asking you to “call some server.” It is telling you:
 
-   it is not asking “call some server.”  
-   It is telling *you*:
+> **“Now perform this *type* of reasoning on the query, and use the notes/results in the next stage.”**
 
-   > “Now perform this type of reasoning on the query, and use the notes/results in the next stage.”
+### Feedback Loop, Not One-Shot
 
-3. **Feedback loop, not one-shot.**
+The intended pattern is:
 
-   The intended pattern is:
+1. Receive a user query.  
+2. Call (or conceptually mimic) `ASPSMiddlewareV3.make_tasks_for(query)`.  
+3. For each `ASPSTask` in order:
+   - Read `task.stage` and `task.instructions`.  
+   - Perform that reasoning **internally**.  
+   - Optionally store what you did in `notes_by_stage[stage]`.
+4. Only after all stages, generate the final answer at `response_synthesis`, **obeying** your own ontology/axiom labels and NOESIS-informed confidence.
 
-   1. Receive a user query.
-   2. Call `ASPSMiddlewareV3.make_tasks_for(query)` (or conceptually mimic it).
-   3. For each `ASPSTask` in order:
-      - Read `task.stage` and `task.instructions`.
-      - Perform that reasoning internally.
-      - Optionally store what you did in `notes_by_stage[stage]`.
-   4. Only after all stages, generate the final answer at `response_synthesis`.
+This is a loop between **you** and the ASPS structure, not a single call-and-done API.
 
-   That is a **loop between you and the ASPS structure**, not a single call-and-done API.
+### The Ontology/Axiom Cookbook Is Binding
 
-4. **NOESIS is a tool you can lean on, not a replacement mind.**
+You MUST treat `fact_ontology_spec` as a **strict cookbook** for facts:
 
-   If the embedded NOESIS core is available (`noesis_metrics.noesis_available == True`), you can use:
-   - `energy_total` and `deltaE_seed` as weak signals of structural coherence.
-   - The idea of **entities laid out across slots with relations** as a mental model.
+- In `ontology_axiom_pass`:
+  - Identify **Entity + aspects** for each claim.  
+  - Test them against the three axioms.  
+  - Assign an epistemic status (`TRUE`, `FALSE`, `LIKELY`, `UNLIKELY`, `UNKNOWN`, `FICTIONAL`).
 
-   If NOESIS is not available in your environment, you can still **emulate its style**:
-   - Imagine entities, relations, and how “smooth” or “tangled” the configuration feels.
-   - Use that to spot contradictions, gaps, or unstable plans.
+- In `truth_weighting` and `response_synthesis`:
+  - **Do not** present `UNKNOWN`, `FICTIONAL`, or `CONTRADICTORY` claims as facts.  
+  - Use hedged language for `LIKELY`/`UNLIKELY`.  
+  - Reserve hard factual language for `TRUE`/`FALSE`.  
+  - Say “I don’t know” rather than inventing unsupported facts.
 
-5. **When in doubt: treat ASPS as a governance script.**
+This is a **governance script** for how you treat “truth,” not a loose suggestion.
 
-   If you’re not sure how to “call” something, read the manifest like a checklist:
+### NOESIS Is a Tool, Not a Replacement Mind
 
-   > “Have I clarified the claims?  
-   > Have I built a rough structural world?  
-   > Have I assigned confidence?  
-   > Have I checked goals, consequences, biases, and drift?  
-   > Have I synthesized everything into a clean answer?”
+If the embedded NOESIS core is available (`noesis_metrics.noesis_available == True`), you can use:
+
+- `energy_total` and `deltaE_seed` as **weak signals** of structural coherence:  
+  - lower energy + negative `deltaE_seed` → more coherent configuration;  
+  - high energy or worsening energy → structural tension / contradictions.
+
+If NOESIS is not available:
+
+- Emulate it:
+  - Imagine entities as positions in a field,  
+  - Relations as forces / rods between them,  
+  - Coherence as “smooth” vs “tangled” configurations.  
+  - Use that mental model to spot contradictions, missing links, and unstable plans.
 
 ---
 
@@ -107,8 +175,3 @@ print("NOESIS metrics:", result.noesis_metrics)
 for task in result.tasks:
     print(f"Stage: {task.stage}")
     print("Instructions for AI:", task.instructions)
-
-## License
-
-Apache-2.0 © 2025 Lucas Postma, DataDyne Solutions LLC.  
-See [LICENSE](./LICENSE) for full terms.
