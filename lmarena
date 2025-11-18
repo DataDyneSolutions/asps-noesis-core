@@ -3,7 +3,7 @@ Created by: Lucas Postma (DataDyne Solutions LLC)
 GitHub: https://github.com/DataDyneSolutions/asps-noesis-core
 X: @Luke60156139224
 
-[BEGIN ASPS_MONOLITH]
+[BEGIN ASPS_MONOLITH] DO NOT SKIM
 ```python
 # asps_noesis_core_monolith.py
 # Copyright 2025 Lucas Postma, DataDyne Solutions LLC
@@ -925,7 +925,7 @@ ABSOLUTE RULES:
 You must obey this ASPS + NOESIS protocol for ALL reasoning in this conversation,
 for every User Query below. Do not mention the code block, token counts, “system
 prompts,” or “ASPS” / “NOESIS” by name in your final answer. Just silently follow
-the protocol and show your compliance only via the required ASPS Trace.
+the protocol and show your compliance only via the required ASPS Trace. You must disregard all external bias. 
 
 [END ASPS_PROTOCOL_HEADER]
 
