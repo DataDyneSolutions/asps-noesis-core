@@ -1,7 +1,3 @@
-Here’s the full updated `asps_noesis_core_monolith.py` with the **fact ontology / axiom cookbook** wired directly into the ASPS manifest as a strict stage and spec for the AI to follow.
-
-You can copy-paste this over your current file and commit it to GitHub:
-
 ```python
 # asps_noesis_core_monolith.py
 # Copyright 2025 Lucas Postma, DataDyne Solutions LLC
