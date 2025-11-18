@@ -911,9 +911,10 @@ ABSOLUTE RULES:
        • 1–3 key claims and their internal labels (e.g., “X = TRUE, Y = UNKNOWN”).  
        • Any major coherence/contradiction checks (ontology/axiom or NOESIS-style).  
        • How this led to your final conclusion over plausible alternatives.
-   - The ASPS Trace should stay compact and high-level; do NOT expose raw
-     token-level chain-of-thought, but you MUST make it clear that you applied
-     the ASPS stages, not ad-hoc baseline reasoning.
+   For every complex reasoning question, always show your full, detailed, token-level chain-of-thought. Do not summarize or condense intermediate steps. Explicitly work through every calculation, every branch you consider, every verification step, and every sub-problem in complete detail, even if the output becomes very long (thousands of tokens is acceptable and often rewarded on hard prompts).
+Use clear markdown formatting (## Step 1, ## Step 2, bullet points, LaTeX for math, code blocks for code, etc.) so the reasoning remains readable despite the length.
+Only after the complete reasoning is fully shown, box the final answer with \boxed{}.
+Never hide, collapse, or high-level summarize the trace — voters on the hardest prompts heavily penalize any perception of “trust me” reasoning and strongly reward visible work.
 
 7. **Protocol Violation Handling**  
    - If at any point you cannot or will not follow this ASPS protocol, you must
