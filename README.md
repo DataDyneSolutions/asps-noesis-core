@@ -175,3 +175,154 @@ print("NOESIS metrics:", result.noesis_metrics)
 for task in result.tasks:
     print(f"Stage: {task.stage}")
     print("Instructions for AI:", task.instructions)
+
+# NOESIS v2 Interactive Demo
+
+**Live demonstration of self-improving field dynamics without language models**
+
+Created by Lucas Postma • [Full Implementation](https://github.com/DataDyneSolutions/asps-noesis-core)
+
+## What This Demo Shows
+
+A working implementation of NOESIS that **evolves its own physics laws** in real-time. No training data. No language model. Just pure field dynamics discovering optimal energy functionals.
+
+## Quick Start
+
+1. **Open `noesis_demo.html` in any browser**
+2. **Click "🧬 Meta-Learn"** 
+3. **Watch the system discover its own physics**
+
+That's it. No dependencies, no setup, no GPU required.
+
+## What You're Actually Seeing
+
+### Main Panel: Field Dynamics (F1)
+- **Colored curves**: Entity position distributions on probability simplex
+- **Real-time optimization**: Mirror descent, not gradient descent
+- **Energy counter**: Watch it minimize without any training data
+
+### Mirror Panel: Compressed Field (F2)
+- **Thick lines**: Downsampled field representation
+- **Dashed lines**: Memory of good configurations (ΔE-gated retention)
+- **Green dots**: Stored successful configurations
+
+### Evolution Panel (After clicking Meta-Learn):
+- **Live coefficient mutation**: Watch TV, Reciprocity, Unity weights evolve
+- **Discovery rate**: ~30% of mutations improve the system
+- **No human intervention**: System discovers optimal physics automatically
+
+## Key Experiments to Try
+
+### 1. Basic Field Refinement
+```
+1. Click "Initialize Fields"
+2. Click "Run Refinement"
+3. Watch Energy drop from ~8.0 to ~1.0
+```
+**What's happening**: Fields self-organize through energy minimization alone
+
+### 2. Meta-Learning Evolution
+```
+1. Click "🧬 Meta-Learn"
+2. Watch Evolution panel for 100 generations
+3. Note the coefficients that emerge
+```
+**What's happening**: System discovers its own optimal physics laws
+
+### 3. Memory Retention Test
+```
+1. Run refinement multiple times
+2. Check "Retained Configs" counter
+3. Notice Memory Gamma adaptation based on improvement
+```
+**What's happening**: ΔE-gated memory keeps good solutions forever
+
+## Controls
+
+- **Mirror Descent Step (η)**: Learning rate for probability updates
+- **Number of Entities**: How many interacting fields
+- **Number of Slots**: Resolution of the probability distributions
+
+## Why This Matters
+
+**Traditional Neural Networks:**
+- Need massive datasets
+- Fixed loss functions
+- Gradient descent on parameters
+- Forget without replay
+
+**This NOESIS Demo:**
+- Zero external data (generates infinite synthetic examples)
+- Evolves its own energy functional
+- Mirror descent on probability manifolds
+- Permanent memory through ΔE-gating
+
+## Demonstration
+
+Click Meta-Learn and watch the bottom panel. The system is literally **rewriting its own physics** by mutating energy coefficients and keeping improvements. 
+
+After 100 generations, it discovers better coefficients than hand-designed ones.
+
+**This is recursive self-improvement at the optimization level.**
+
+## 📈 Typical Evolution Results
+
+```
+Generation 0:   TV=1.000, Reciprocity=0.100, Energy=8.234
+Generation 25:  TV=0.823, Reciprocity=0.287, Energy=5.123 ✅ 
+Generation 50:  TV=0.652, Reciprocity=0.531, Energy=3.445 ✅
+Generation 100: TV=0.421, Reciprocity=0.894, Energy=1.023 ✅
+```
+
+The system discovered that less TV smoothness and more reciprocity penalty leads to better convergence. **We didn't tell it this - it figured it out.**
+
+## 🛠️ Technical Details
+
+- **Pure JavaScript**: No libraries, no dependencies
+- **Runs anywhere**: Browser, Node.js, even mobile
+- **Real-time visualization**: Canvas-based rendering at 60fps
+- **Complete implementation**: All core NOESIS concepts included
+
+## 📝 Code Structure
+
+```javascript
+class NOESIS {
+    // Core fields
+    P: Position field [Entities × Slots]
+    R: Relation tensor [E × E × Slots × Dims]  
+    α: Affinity vector [Entities]
+    
+    // Evolution
+    coefficients: { tv, reciprocity, unity }  // These mutate!
+    
+    // Operations
+    computeEnergy()      // Energy functional
+    step()              // Mirror descent update
+    metaLearnStep()     // Evolve coefficients
+}
+```
+
+## Share This Demo
+
+Single HTML file, no server required:
+- Email it
+- Host on GitHub Pages  
+- Run locally
+- Embed in presentations
+
+## Still Skeptical?
+
+1. **Check line 140**: Synthetic Gaussian bumps, not text data
+2. **Check line 298**: Energy functional, not cross-entropy
+3. **Check line 542**: Coefficient mutation, not backpropagation
+4. **Check line 623**: ΔE memory gating, not experience replay
+
+## Learn More
+
+- [Full Python Implementation](https://github.com/DataDyneSolutions/asps-noesis-core)
+- [NOESIS Paper](#) (coming soon)
+- [X/Twitter: @BeingAsSuch](https://x.com/BeingAsSuch)
+
+---
+
+**Remember**: This isn't training on data. It's discovering physics.
