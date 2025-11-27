@@ -3,6 +3,7 @@ noesis_v2_complete.py
 Created by: Lucas Postma (DataDyne Solutions LLC)
 GitHub: https://github.com/DataDyneSolutions/asps-noesis-core
 X: @BeingAsSuch
+Drop a star to support the work!
 
 #!/usr/bin/env python3
 # noesis_v2_complete.py
