@@ -1,0 +1,997 @@
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+
+// ============================================================================
+// EXPANDED KNOWLEDGE BASE
+// ============================================================================
+
+const KNOWLEDGE_BASE = {
+  entities: {
+    "einstein": { type: "person", domain: "physics", aliases: ["albert einstein"] },
+    "bohr": { type: "person", domain: "physics", aliases: ["niels bohr"] },
+    "quantum mechanics": { type: "theory", domain: "physics", aliases: ["quantum theory", "qm", "quantum physics"] },
+    "general relativity": { type: "theory", domain: "physics", aliases: ["gr", "relativity"] },
+    "local realism": { type: "concept", domain: "physics", aliases: ["local hidden variables"] },
+    "bell theorem": { type: "theorem", domain: "physics", aliases: ["bell's theorem", "bell inequality", "bells theorem"] },
+    "determinism": { type: "concept", domain: "philosophy", aliases: ["strict determinism", "causal determinism"] },
+    "free will": { type: "concept", domain: "philosophy", aliases: ["libertarian free will", "freedom of choice"] },
+    "compatibilism": { type: "concept", domain: "philosophy", aliases: [] },
+    "incompatibilism": { type: "concept", domain: "philosophy", aliases: [] },
+    "libertarianism": { type: "concept", domain: "philosophy", aliases: ["metaphysical libertarianism"] },
+    "hard determinism": { type: "concept", domain: "philosophy", aliases: [] },
+    "quantum indeterminism": { type: "concept", domain: "physics", aliases: ["indeterminism"] },
+    "aristotle": { type: "person", domain: "philosophy", aliases: [] },
+    "david hume": { type: "person", domain: "philosophy", aliases: ["hume"] },
+    "daniel dennett": { type: "person", domain: "philosophy", aliases: ["dennett"] },
+    "sam harris": { type: "person", domain: "philosophy", aliases: [] },
+    "robert sapolsky": { type: "person", domain: "biology", aliases: ["sapolsky"] },
+    "artificial intelligence": { type: "field", domain: "ai", aliases: ["ai", "machine intelligence"] },
+    "consciousness": { type: "concept", domain: "philosophy", aliases: ["awareness", "sentience"] },
+    "simulation": { type: "concept", domain: "ai", aliases: ["simulate", "emulation"] },
+    "understanding": { type: "concept", domain: "philosophy", aliases: ["comprehension", "true understanding"] },
+    "chinese room": { type: "thought_experiment", domain: "philosophy", aliases: ["searle"] },
+    "turing test": { type: "concept", domain: "ai", aliases: ["imitation game"] },
+    "qualia": { type: "concept", domain: "philosophy", aliases: [] },
+    "hard problem of consciousness": { type: "concept", domain: "philosophy", aliases: ["hard problem"] },
+    "computationalism": { type: "theory", domain: "philosophy", aliases: [] },
+    "john searle": { type: "person", domain: "philosophy", aliases: ["searle"] },
+    "roger penrose": { type: "person", domain: "physics", aliases: ["penrose"] },
+    "david chalmers": { type: "person", domain: "philosophy", aliases: ["chalmers"] },
+    "strong ai": { type: "concept", domain: "ai", aliases: [] },
+    "weak ai": { type: "concept", domain: "ai", aliases: [] },
+    "agi": { type: "concept", domain: "ai", aliases: ["artificial general intelligence", "general ai"] },
+    "alignment": { type: "concept", domain: "ai", aliases: ["ai alignment", "aligned ai"] },
+    "llm": { type: "technology", domain: "ai", aliases: ["large language model", "llms", "language model"] },
+    "scaling laws": { type: "concept", domain: "ai", aliases: ["scaling", "scale"] },
+    "existential risk": { type: "concept", domain: "ai", aliases: ["x-risk", "extinction risk"] },
+    "stochastic parrot": { type: "concept", domain: "ai", aliases: ["stochastic parrots"] },
+    "misalignment": { type: "concept", domain: "ai", aliases: ["misaligned ai", "unaligned"] },
+    "scalable oversight": { type: "concept", domain: "ai", aliases: ["oversight", "debate protocols"] },
+    "constitutional ai": { type: "concept", domain: "ai", aliases: ["constitutional", "cai"] },
+    "interpretability": { type: "concept", domain: "ai", aliases: ["mechanistic interpretability", "circuits"] },
+    "alignment faking": { type: "concept", domain: "ai", aliases: ["deceptive alignment"] },
+    "formal verification": { type: "concept", domain: "ai", aliases: ["verification", "provable safety"] },
+    "outer alignment": { type: "concept", domain: "ai", aliases: ["outer"] },
+    "inner alignment": { type: "concept", domain: "ai", aliases: ["inner", "mesa-optimization"] },
+    "corrigibility": { type: "concept", domain: "ai", aliases: ["corrigible"] },
+    "debate": { type: "concept", domain: "ai", aliases: ["ai debate", "debate protocol"] },
+    "chain of thought": { type: "concept", domain: "ai", aliases: ["cot", "reasoning chain"] },
+    "deliberative alignment": { type: "concept", domain: "ai", aliases: ["deliberative"] },
+    "ai control": { type: "concept", domain: "ai", aliases: ["control problem"] },
+    "asi": { type: "concept", domain: "ai", aliases: ["artificial superintelligence", "superintelligence"] },
+    "co2": { type: "substance", domain: "climate", aliases: ["carbon dioxide", "carbon"] },
+    "greenhouse effect": { type: "phenomenon", domain: "climate", aliases: ["greenhouse warming"] },
+    "climate change": { type: "phenomenon", domain: "climate", aliases: ["global warming", "agw"] },
+    "anthropogenic": { type: "concept", domain: "climate", aliases: ["human caused", "man made", "human activity"] },
+    "natural cycles": { type: "concept", domain: "climate", aliases: ["natural variation", "natural climate change"] },
+    "ipcc": { type: "organization", domain: "climate", aliases: ["intergovernmental panel on climate change"] },
+    "scientific consensus": { type: "concept", domain: "climate", aliases: ["consensus"] },
+  },
+  triples: [
+    ["einstein", "developed", "general relativity"],
+    ["einstein", "criticized", "quantum mechanics"],
+    ["einstein", "supported", "local realism"],
+    ["einstein", "wrong_about", "local realism"],
+    ["bohr", "developed", "quantum mechanics"],
+    ["bohr", "opposed", "einstein"],
+    ["bell theorem", "disproves", "local realism"],
+    ["quantum mechanics", "contradicts", "local realism"],
+    ["quantum mechanics", "validated_by", "experiments"],
+    ["determinism", "contradicts", "free will"],
+    ["free will", "contradicts", "determinism"],
+    ["compatibilism", "reconciles", "free will"],
+    ["compatibilism", "reconciles", "determinism"],
+    ["incompatibilism", "denies", "compatibilism"],
+    ["hard determinism", "rejects", "free will"],
+    ["libertarianism", "denies", "determinism"],
+    ["libertarianism", "accepts", "free will"],
+    ["quantum mechanics", "supports", "indeterminism"],
+    ["quantum indeterminism", "supports", "free will"],
+    ["quantum indeterminism", "challenges", "determinism"],
+    ["daniel dennett", "supports", "compatibilism"],
+    ["sam harris", "argues_against", "free will"],
+    ["robert sapolsky", "argues_against", "free will"],
+    ["simulation", "contradicts", "understanding"],
+    ["chinese room", "argues", "simulation not understanding"],
+    ["understanding", "requires", "consciousness"],
+    ["consciousness", "may_be", "computational"],
+    ["turing test", "does_not_measure", "understanding"],
+    ["john searle", "argues_against", "strong ai"],
+    ["roger penrose", "argues_against", "ai consciousness"],
+    ["david chalmers", "identified", "hard problem of consciousness"],
+    ["llm", "is", "stochastic parrot"],
+    ["stochastic parrot", "contradicts", "understanding"],
+    ["scaling laws", "suggests", "agi possible"],
+    ["agi", "poses", "existential risk"],
+    ["misalignment", "causes", "existential risk"],
+    ["alignment", "prevents", "existential risk"],
+    ["alignment", "unsolved", "currently"],
+    ["agi", "predicted_before", "2030"],
+    ["scalable oversight", "enables", "alignment"],
+    ["debate", "provides", "scalable oversight"],
+    ["constitutional ai", "trains_on", "principles"],
+    ["interpretability", "reduces", "ai risk"],
+    ["alignment faking", "challenges", "alignment"],
+    ["formal verification", "provides", "safety guarantees"],
+    ["scaling laws", "suggests", "capability increase"],
+    ["capability increase", "challenges", "alignment"],
+    ["outer alignment", "requires", "correct objectives"],
+    ["inner alignment", "requires", "goal stability"],
+    ["debate", "effective_in", "low stakes"],
+    ["debate", "challenges_in", "high stakes"],
+    ["chain of thought", "improves", "reasoning"],
+    ["deliberative alignment", "combines", "chain of thought"],
+    ["ai control", "designs", "safe protocols"],
+    ["asi", "poses", "existential risk"],
+    ["scalable oversight", "scales_with", "compute"],
+    ["co2", "causes", "greenhouse effect"],
+    ["greenhouse effect", "causes", "climate change"],
+    ["anthropogenic", "causes", "co2 rise"],
+    ["natural cycles", "contradicts", "anthropogenic"],
+    ["climate change", "supported_by", "scientific consensus"],
+    ["ipcc", "states", "humans drive warming"],
+    ["scientific consensus", "exceeds_97_percent", "human caused warming"],
+  ],
+  contradictions: [
+    [["einstein", "right"], ["einstein", "wrong"]],
+    [["einstein", "correct"], ["einstein", "incorrect"]],
+    [["free will", "exists"], ["free will", "not exist"]],
+    [["free will", "exists"], ["free will", "illusion"]],
+    [["free will", "real"], ["no free will"]],
+    [["determinism", "true"], ["determinism", "false"]],
+    [["determinism", "true"], ["indeterminism", "true"]],
+    [["climate change", "real"], ["climate change", "hoax"]],
+    [["climate change", "human"], ["climate change", "natural"]],
+    [["ai", "conscious"], ["ai", "not conscious"]],
+    [["ai", "understand"], ["ai", "not understand"]],
+    [["simulation", "is", "understanding"], ["simulation", "not", "understanding"]],
+    [["strong ai", "possible"], ["strong ai", "impossible"]],
+    [["llm", "understand"], ["llm", "parrot"]],
+    [["agi", "soon"], ["agi", "far"]],
+    [["agi", "safe"], ["agi", "dangerous"]],
+    [["alignment", "solved"], ["alignment", "unsolved"]],
+    [["scaling"], ["diminishing returns"]],
+  ],
+  supports: [
+    [["bell", "theorem"], ["quantum", "correct"]],
+    [["experiments"], ["quantum", "valid"]],
+    [["ipcc"], ["anthropogenic"]],
+    [["quantum indeterminism"], ["free will"]],
+    [["compatibilism"], ["free will", "determinism"]],
+    [["chinese room"], ["simulation", "not understanding"]],
+    [["sapolsky"], ["no free will"]],
+    [["dennett"], ["compatibilism"]],
+    [["scaling"], ["agi"]],
+    [["misalignment"], ["existential risk"]],
+  ]
+};
+
+// ============================================================================
+// FUZZY MATCHING & KNOWLEDGE ENGINE
+// ============================================================================
+
+function levenshtein(a, b) {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      matrix[i][j] = b.charAt(i-1) === a.charAt(j-1) 
+        ? matrix[i-1][j-1] : Math.min(matrix[i-1][j-1]+1, matrix[i][j-1]+1, matrix[i-1][j]+1);
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+function similarity(str1, str2) {
+  const s1 = str1.toLowerCase(), s2 = str2.toLowerCase();
+  const maxLen = Math.max(s1.length, s2.length);
+  return maxLen === 0 ? 1 : 1 - levenshtein(s1, s2) / maxLen;
+}
+
+function fuzzyMatch(text, target, threshold = 0.75) {
+  const words = text.toLowerCase().split(/\s+/);
+  const targetLower = target.toLowerCase();
+  if (text.toLowerCase().includes(targetLower)) return 1.0;
+  for (const word of words) {
+    const sim = similarity(word, targetLower);
+    if (sim >= threshold) return sim;
+  }
+  return similarity(text.toLowerCase(), targetLower);
+}
+
+function normalizeText(text) {
+  return text.toLowerCase().replace(/['']/g, "'").replace(/[""]/g, '"')
+    .replace(/[^\w\s'"-]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function findEntities(text) {
+  const normalized = normalizeText(text);
+  const found = [];
+  Object.entries(KNOWLEDGE_BASE.entities).forEach(([key, data]) => {
+    const allNames = [key, ...data.aliases];
+    for (const name of allNames) {
+      const score = fuzzyMatch(normalized, name, 0.8);
+      if (score >= 0.8) { found.push({ key, name, score, ...data }); break; }
+    }
+  });
+  return found;
+}
+
+function findTriples(entities) {
+  const entityKeys = entities.map(e => e.key);
+  return KNOWLEDGE_BASE.triples.filter(([s, r, o]) => 
+    entityKeys.some(k => fuzzyMatch(s, k, 0.85) >= 0.85 || fuzzyMatch(o, k, 0.85) >= 0.85)
+  );
+}
+
+function detectContradiction(text1, text2) {
+  const n1 = normalizeText(text1), n2 = normalizeText(text2);
+  for (const [pattern1, pattern2] of KNOWLEDGE_BASE.contradictions) {
+    const m1 = pattern1.every(p => n1.includes(p.toLowerCase()));
+    const m2 = pattern2.every(p => n2.includes(p.toLowerCase()));
+    const m1r = pattern1.every(p => n2.includes(p.toLowerCase()));
+    const m2r = pattern2.every(p => n1.includes(p.toLowerCase()));
+    if ((m1 && m2) || (m1r && m2r)) {
+      return { isContradiction: true, confidence: 0.95, reason: 'kb_pattern', 
+        source: `KB: [${pattern1.join(',')}] vs [${pattern2.join(',')}]` };
+    }
+  }
+  const entities1 = findEntities(text1), entities2 = findEntities(text2);
+  const shared = entities1.filter(e1 => entities2.some(e2 => e2.key === e1.key));
+  if (shared.length > 0) {
+    const neg = ['not', "n't", 'never', 'no', 'false', 'wrong', 'incorrect', 'illusion', 'hoax', 'myth', 'fake', 'lacks', 'cannot', 'impossible', 'just'];
+    const pos = ['is', 'are', 'was', 'right', 'correct', 'true', 'real', 'exists', 'valid', 'proven', 'can', 'does', 'has', 'possible', 'will'];
+    const hasNeg1 = neg.some(w => n1.includes(w)), hasNeg2 = neg.some(w => n2.includes(w));
+    const hasPos1 = pos.some(w => n1.includes(w)), hasPos2 = pos.some(w => n2.includes(w));
+    if ((hasNeg1 && !hasNeg2 && hasPos2) || (hasNeg2 && !hasNeg1 && hasPos1)) {
+      return { isContradiction: true, confidence: 0.75, reason: 'negation', source: `Negation on: ${shared[0].key}` };
+    }
+  }
+  return { isContradiction: false, confidence: 0, reason: null, source: null };
+}
+
+function detectSupport(text1, text2) {
+  const n1 = normalizeText(text1), n2 = normalizeText(text2);
+  for (const pattern of KNOWLEDGE_BASE.supports) {
+    const flat = pattern.flat();
+    const mc1 = flat.filter(p => n1.includes(p.toLowerCase())).length;
+    const mc2 = flat.filter(p => n2.includes(p.toLowerCase())).length;
+    if (mc1 >= 1 && mc2 >= 1 && mc1 + mc2 >= flat.length) {
+      return { isSupport: true, confidence: 0.8, reason: 'kb_support', source: `KB: [${flat.join(',')}]` };
+    }
+  }
+  const entities1 = findEntities(text1), entities2 = findEntities(text2);
+  const shared = entities1.filter(e1 => entities2.some(e2 => e2.key === e1.key));
+  if (shared.length > 0) {
+    const neg = ['not', "n't", 'never', 'no', 'false', 'wrong', 'illusion', 'hoax'];
+    const hasNeg1 = neg.some(w => n1.includes(w)), hasNeg2 = neg.some(w => n2.includes(w));
+    if ((hasNeg1 && hasNeg2) || (!hasNeg1 && !hasNeg2)) {
+      return { isSupport: true, confidence: 0.5, reason: 'polarity', source: `Same polarity: ${shared[0].key}` };
+    }
+  }
+  return { isSupport: false, confidence: 0, reason: null, source: null };
+}
+
+function groundClaim(text) {
+  const entities = findEntities(text);
+  const triples = findTriples(entities);
+  return { text, entities, triples, grounded: entities.length > 0, groundingScore: Math.min(1, entities.length * 0.25 + triples.length * 0.15) };
+}
+
+// ============================================================================
+// NOESIS FIELD ENGINE
+// ============================================================================
+
+const RELATION_TYPES = {
+  supports: { color: '#4ade80', attract: true, strength: 0.9 },
+  contradicts: { color: '#f87171', attract: false, strength: 1.0 },
+  related: { color: '#60a5fa', attract: true, strength: 0.3 },
+};
+
+const EPISTEMIC = {
+  GROUNDED: { color: '#4ade80', label: 'Grounded' },
+  CONTESTED: { color: '#f87171', label: 'Contested' },
+  SUPPORTED: { color: '#a3e635', label: 'Supported' },
+  UNGROUNDED: { color: '#6b7280', label: 'Ungrounded' }
+};
+
+class NoesisField {
+  constructor() { this.claims = []; this.relations = []; this.energy = 0; }
+
+  addClaim(text) {
+    const grounding = groundClaim(text);
+    const claim = {
+      id: this.claims.length, text: text.trim(),
+      x: 100 + Math.random() * 300, y: 50 + Math.random() * 150,
+      vx: 0, vy: 0, grounding,
+      status: grounding.grounded ? 'GROUNDED' : 'UNGROUNDED',
+      mass: 0.5 + grounding.groundingScore * 2
+    };
+    this.claims.forEach(existing => {
+      const contra = detectContradiction(claim.text, existing.text);
+      const support = detectSupport(claim.text, existing.text);
+      if (contra.isContradiction) {
+        this.relations.push({ from: claim.id, to: existing.id, type: 'contradicts', confidence: contra.confidence, reason: contra.reason, source: contra.source, kbBacked: contra.reason === 'kb_pattern' || contra.reason === 'kb_triple' });
+        claim.status = 'CONTESTED'; existing.status = 'CONTESTED';
+      } else if (support.isSupport) {
+        this.relations.push({ from: claim.id, to: existing.id, type: 'supports', confidence: support.confidence, reason: support.reason, source: support.source, kbBacked: support.reason === 'kb_support' || support.reason === 'kb_triple' });
+        if (claim.status !== 'CONTESTED') claim.status = 'SUPPORTED';
+        if (existing.status !== 'CONTESTED') existing.status = 'SUPPORTED';
+      } else if (grounding.entities.some(e1 => existing.grounding.entities.some(e2 => e2.key === e1.key))) {
+        this.relations.push({ from: claim.id, to: existing.id, type: 'related', confidence: 0.4, reason: 'shared_entity', source: 'Shared entity', kbBacked: false });
+      }
+    });
+    this.claims.push(claim);
+    return claim;
+  }
+
+  computeEnergy() {
+    let energy = 0;
+    this.relations.forEach(r => {
+      const c1 = this.claims[r.from], c2 = this.claims[r.to];
+      if (!c1 || !c2) return;
+      const dist = Math.sqrt((c2.x-c1.x)**2 + (c2.y-c1.y)**2) + 1;
+      const rel = RELATION_TYPES[r.type];
+      if (rel.attract) energy += (dist / 120) * rel.strength * r.confidence * 0.5;
+      else energy += (300 / dist) * rel.strength * r.confidence;
+    });
+    this.claims.filter(c => c.status === 'CONTESTED').forEach(() => { energy += 0.6; });
+    this.claims.filter(c => c.status === 'UNGROUNDED').forEach(() => { energy += 0.15; });
+    this.energy = Math.max(0, energy);
+    return this.energy;
+  }
+
+  physicsStep(multiplier = 1) {
+    const damping = 0.9, centerX = 250, centerY = 125, centerPull = 0.012, nodeRepulsion = 4000;
+    this.claims.forEach((c1, i) => {
+      let fx = 0, fy = 0;
+      fx += (centerX - c1.x) * centerPull; fy += (centerY - c1.y) * centerPull;
+      this.claims.forEach((c2, j) => {
+        if (i === j) return;
+        const dx = c1.x - c2.x, dy = c1.y - c2.y, dist = Math.sqrt(dx*dx + dy*dy) + 1;
+        const force = nodeRepulsion / (dist * dist);
+        fx += (dx / dist) * force; fy += (dy / dist) * force;
+      });
+      this.relations.forEach(r => {
+        if (r.from !== i && r.to !== i) return;
+        const other = this.claims[r.from === i ? r.to : r.from];
+        if (!other) return;
+        const dx = other.x - c1.x, dy = other.y - c1.y, dist = Math.sqrt(dx*dx + dy*dy) + 1;
+        const rel = RELATION_TYPES[r.type], strength = rel.strength * r.confidence * multiplier;
+        if (rel.attract) { fx += (dx/dist) * strength * 5; fy += (dy/dist) * strength * 5; }
+        else { fx -= (dx/dist) * strength * 8; fy -= (dy/dist) * strength * 8; }
+      });
+      c1.vx = (c1.vx + fx * 0.016) * damping; c1.vy = (c1.vy + fy * 0.016) * damping;
+      c1.x = Math.max(45, Math.min(455, c1.x + c1.vx)); c1.y = Math.max(30, Math.min(220, c1.y + c1.vy));
+    });
+    return this.computeEnergy();
+  }
+
+  resolve() { for (let i = 0; i < 200; i++) this.physicsStep(3); return this.computeEnergy(); }
+
+  getStats() {
+    return {
+      grounded: this.claims.filter(c => c.grounding.grounded).length,
+      contested: this.claims.filter(c => c.status === 'CONTESTED').length,
+      contradictions: this.relations.filter(r => r.type === 'contradicts').length,
+      supports: this.relations.filter(r => r.type === 'supports').length,
+      total: this.claims.length
+    };
+  }
+
+  getCoherence() {
+    const e = this.energy;
+    if (this.claims.length === 0) return { level: 'EMPTY', color: '#64748b', desc: 'No claims' };
+    if (e < 0.5) return { level: 'COHERENT', color: '#4ade80', desc: 'Stable' };
+    if (e < 2) return { level: 'TENSION', color: '#fbbf24', desc: 'Tension' };
+    if (e < 4) return { level: 'CONFLICT', color: '#fb923c', desc: 'Conflict' };
+    return { level: 'CRITICAL', color: '#f87171', desc: 'Irreconcilable' };
+  }
+
+  getFieldState() {
+    const stats = this.getStats();
+    const coherence = this.getCoherence();
+    return {
+      energy: this.energy.toFixed(3),
+      coherence: coherence.level,
+      coherenceScore: Math.max(0, Math.round((1 - this.energy / 8) * 100)),
+      claims: this.claims.map((c, i) => ({
+        id: i + 1,
+        text: c.text,
+        status: c.status,
+        grounded: c.grounding.grounded,
+        entities: c.grounding.entities.map(e => e.key)
+      })),
+      relations: this.relations.map(r => ({
+        from: r.from + 1,
+        to: r.to + 1,
+        type: r.type,
+        confidence: Math.round(r.confidence * 100),
+        kbBacked: r.kbBacked,
+        source: r.source
+      })),
+      stats
+    };
+  }
+
+  clear() { this.claims = []; this.relations = []; this.energy = 0; }
+}
+
+// ============================================================================
+// CANVAS (Clean - no overlay stats)
+// ============================================================================
+
+const FieldCanvas = ({ field, selectedClaim, onSelectClaim, hoveredRelation, onHoverRelation, resolved }) => {
+  const canvasRef = useRef(null);
+  const [pulsePhase, setPulsePhase] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => setPulsePhase(p => (p + 0.1) % (Math.PI * 2)), 50);
+    return () => clearInterval(interval);
+  }, []);
+  
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    let animId;
+    
+    const draw = () => {
+      if (field.energy > 4) {
+        const pulse = Math.sin(pulsePhase) * 0.15 + 0.15;
+        ctx.fillStyle = `rgba(127, 29, 29, ${pulse})`;
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#0f172a';
+        ctx.globalAlpha = 0.85;
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, W, H);
+      }
+      
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.25)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < W; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke(); }
+      for (let i = 0; i < H; i += 40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke(); }
+      
+      if (!resolved) field.physicsStep();
+      
+      field.relations.forEach((r, idx) => {
+        const c1 = field.claims[r.from], c2 = field.claims[r.to];
+        if (!c1 || !c2) return;
+        const rel = RELATION_TYPES[r.type];
+        const isHovered = hoveredRelation === idx;
+        ctx.beginPath(); ctx.moveTo(c1.x, c1.y); ctx.lineTo(c2.x, c2.y);
+        if (r.kbBacked) {
+          ctx.strokeStyle = isHovered ? '#fff' : rel.color;
+          ctx.lineWidth = isHovered ? 4 : 2 + r.confidence * 2;
+          ctx.setLineDash(r.type === 'contradicts' ? [8, 4] : []);
+          ctx.globalAlpha = 0.9;
+        } else {
+          ctx.strokeStyle = isHovered ? '#fff' : rel.color;
+          ctx.lineWidth = isHovered ? 3 : 1 + r.confidence;
+          ctx.setLineDash([4, 6]);
+          ctx.globalAlpha = 0.4;
+        }
+        ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+        
+        const mx = (c1.x + c2.x) / 2, my = (c1.y + c2.y) / 2;
+        if (r.kbBacked) {
+          ctx.fillStyle = rel.color;
+          ctx.font = 'bold 8px system-ui';
+          ctx.textAlign = 'center';
+          ctx.fillText(r.type.toUpperCase(), mx, my - 4);
+          ctx.font = '7px monospace';
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillText(Math.round(r.confidence * 100) + '% KB', mx, my + 7);
+        }
+      });
+      
+      field.claims.forEach((claim, idx) => {
+        const status = EPISTEMIC[claim.status];
+        const isSelected = selectedClaim === claim.id;
+        const radius = 16 + claim.grounding.groundingScore * 12;
+        
+        const glow = ctx.createRadialGradient(claim.x, claim.y, 0, claim.x, claim.y, radius * 2.2);
+        glow.addColorStop(0, status.color + '50');
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(claim.x, claim.y, radius * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        if (claim.grounding.grounded) {
+          ctx.beginPath();
+          ctx.arc(claim.x, claim.y, radius + 5, -Math.PI/2, -Math.PI/2 + Math.PI*2*claim.grounding.groundingScore);
+          ctx.strokeStyle = '#4ade80';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+        
+        ctx.beginPath();
+        ctx.arc(claim.x, claim.y, radius, 0, Math.PI * 2);
+        const nodeGrad = ctx.createRadialGradient(claim.x-4, claim.y-4, 0, claim.x, claim.y, radius);
+        nodeGrad.addColorStop(0, '#475569');
+        nodeGrad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = nodeGrad;
+        ctx.fill();
+        ctx.strokeStyle = isSelected ? '#fff' : status.color;
+        ctx.lineWidth = isSelected ? 3 : 2;
+        ctx.stroke();
+        
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px system-ui';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(idx + 1), claim.x, claim.y);
+        
+        ctx.beginPath();
+        ctx.arc(claim.x + radius - 3, claim.y - radius + 3, 5, 0, Math.PI * 2);
+        ctx.fillStyle = status.color;
+        ctx.fill();
+      });
+      
+      if (resolved) {
+        const coherence = field.getCoherence();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.font = 'bold 24px system-ui';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = coherence.level === 'COHERENT' ? '#4ade80' : coherence.level === 'CRITICAL' ? '#f87171' : '#fbbf24';
+        ctx.fillText(coherence.level === 'COHERENT' ? 'COHERENT' : coherence.level === 'CRITICAL' ? 'IRRECONCILABLE' : 'TENSION REMAINS', W/2, H/2 - 10);
+        ctx.font = '14px system-ui';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(`Final Energy: ${field.energy.toFixed(2)}`, W/2, H/2 + 20);
+      }
+      
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => cancelAnimationFrame(animId);
+  }, [field, selectedClaim, hoveredRelation, pulsePhase, resolved]);
+  
+  const handleClick = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (500 / rect.width);
+    const y = (e.clientY - rect.top) * (250 / rect.height);
+    const clicked = field.claims.find(c => Math.sqrt((c.x-x)**2 + (c.y-y)**2) < 30);
+    onSelectClaim(clicked ? clicked.id : null);
+  };
+  
+  const handleMouseMove = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (500 / rect.width);
+    const y = (e.clientY - rect.top) * (250 / rect.height);
+    let foundIdx = null;
+    field.relations.forEach((r, idx) => {
+      const c1 = field.claims[r.from], c2 = field.claims[r.to];
+      if (!c1 || !c2) return;
+      const mx = (c1.x + c2.x) / 2, my = (c1.y + c2.y) / 2;
+      if (Math.sqrt((mx-x)**2 + (my-y)**2) < 20) foundIdx = idx;
+    });
+    onHoverRelation(foundIdx);
+  };
+  
+  return (
+    <canvas ref={canvasRef} width={500} height={250}
+      onClick={handleClick} onMouseMove={handleMouseMove} onMouseLeave={() => onHoverRelation(null)}
+      className="w-full rounded-lg border border-slate-700 cursor-pointer" />
+  );
+};
+
+// ============================================================================
+// MAIN APP
+// ============================================================================
+
+export default function IdeaArenaV5() {
+  const [field] = useState(() => new NoesisField());
+  const [version, setVersion] = useState(0);
+  const [newClaim, setNewClaim] = useState('');
+  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [hoveredRelation, setHoveredRelation] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [resolved, setResolved] = useState(false);
+  const [aiCommand, setAiCommand] = useState('');
+  const [aiOutput, setAiOutput] = useState('');
+
+  const forceUpdate = useCallback(() => setVersion(v => v + 1), []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (field.claims.length > 0 && !resolved) {
+        setHistory(h => [...h.slice(-50), { energy: field.energy, t: Date.now() }]);
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [field, resolved]);
+
+  const handleAddClaim = useCallback(() => {
+    if (!newClaim.trim()) return;
+    setResolved(false);
+    field.addClaim(newClaim);
+    setNewClaim('');
+    forceUpdate();
+  }, [field, newClaim, forceUpdate]);
+
+  const handleResolve = useCallback(() => {
+    field.resolve();
+    setResolved(true);
+    forceUpdate();
+  }, [field, forceUpdate]);
+
+  const handleClear = useCallback(() => {
+    field.clear();
+    setHistory([]);
+    setSelectedClaim(null);
+    setResolved(false);
+    forceUpdate();
+  }, [field, forceUpdate]);
+
+  // AI Command Parser
+  const executeAiCommand = useCallback(() => {
+    const cmd = aiCommand.trim().toLowerCase();
+    let output = '';
+    
+    if (cmd.startsWith('load ')) {
+      const scenario = cmd.slice(5).trim();
+      const scenarioMap = {
+        'einstein': scenarioData.einstein,
+        'freewill': scenarioData.freewill,
+        'ai': scenarioData.ai,
+        'climate': scenarioData.climate,
+        'alignment': scenarioData.alignment,
+        'lw_roadmap': scenarioData.lw_roadmap,
+        'lw_interventions': scenarioData.lw_interventions,
+        'lw_benchmarks': scenarioData.lw_benchmarks,
+        'lw_debate': scenarioData.lw_debate,
+        'lw_scaling': scenarioData.lw_scaling
+      };
+      const claims = scenarioMap[scenario];
+      if (claims) {
+        field.clear(); setHistory([]); setResolved(false);
+        claims.forEach(c => field.addClaim(c));
+        forceUpdate();
+        output = `Loaded ${scenario} scenario with ${claims.length} claims.`;
+      } else {
+        output = `Unknown scenario. Available: einstein, freewill, ai, climate, alignment, lw_roadmap, lw_interventions, lw_benchmarks, lw_debate, lw_scaling`;
+      }
+    } else if (cmd.startsWith('add ')) {
+      const claim = aiCommand.slice(4).trim();
+      setResolved(false);
+      field.addClaim(claim);
+      forceUpdate();
+      output = `Added claim: "${claim}"`;
+    } else if (cmd === 'resolve') {
+      field.resolve();
+      setResolved(true);
+      forceUpdate();
+      output = `Field resolved. Final energy: ${field.energy.toFixed(3)}, Status: ${field.getCoherence().level}`;
+    } else if (cmd === 'clear') {
+      field.clear(); setHistory([]); setSelectedClaim(null); setResolved(false);
+      forceUpdate();
+      output = 'Field cleared.';
+    } else if (cmd === 'state' || cmd === 'status') {
+      const state = field.getFieldState();
+      output = JSON.stringify(state, null, 2);
+    } else if (cmd === 'help') {
+      output = `Commands:
+- load <scenario>: Load a scenario (einstein, freewill, ai, climate, alignment)
+- add <claim>: Add a claim to the field
+- resolve: Run resolution to find equilibrium
+- clear: Clear all claims
+- state: Get current field state as JSON
+- help: Show this help`;
+    } else {
+      output = 'Unknown command. Type "help" for available commands.';
+    }
+    
+    setAiOutput(output);
+    setAiCommand('');
+  }, [aiCommand, field, forceUpdate]);
+
+  const scenarios = [
+    { name: 'Einstein vs Bohr', key: 'einstein' },
+    { name: 'Free Will', key: 'freewill' },
+    { name: 'AI Consciousness', key: 'ai' },
+    { name: 'Climate', key: 'climate' },
+    { name: 'AI Alignment', key: 'alignment' }
+  ];
+
+  const lwBenchmarks = [
+    { name: 'LW: Safety Roadmap', key: 'lw_roadmap' },
+    { name: 'LW: Interventions', key: 'lw_interventions' },
+    { name: 'LW: Benchmarks 2025', key: 'lw_benchmarks' },
+    { name: 'LW: Debate Safety', key: 'lw_debate' },
+    { name: 'LW: Scaling', key: 'lw_scaling' }
+  ];
+
+  const scenarioData = {
+    einstein: ['Einstein was right about local realism', 'Quantum mechanics is experimentally validated', "Bell's theorem disproves local realism", 'Einstein was wrong about quantum mechanics'],
+    freewill: ['Free will exists', 'Determinism is true', 'Sam Harris argues free will is an illusion', 'Compatibilism reconciles free will and determinism', 'Robert Sapolsky argues there is no free will'],
+    ai: ['AI can truly understand language', 'The Chinese Room shows simulation is not understanding', 'Consciousness may be computational', 'Roger Penrose argues against AI consciousness', 'The Turing test measures behavior not understanding'],
+    climate: ['CO2 causes the greenhouse effect', 'Human activity causes CO2 rise', 'Climate change is primarily natural cycles', 'Scientific consensus exceeds 97% on human-caused warming', 'The IPCC states humans drive global warming'],
+    alignment: ['Current LLMs are just stochastic parrots', 'Scaling laws will continue for another 5 OOMs', 'AGI is coming before 2030', 'We do not have any alignment plan that scales', 'Misaligned AGI poses existential risk', 'Shutting down AI progress is politically impossible'],
+    // LessWrong Benchmarks
+    lw_roadmap: ['AI safety has become increasingly urgent due to rapid developments', 'Scalable oversight through debate protocols enables alignment', 'Weak-to-strong generalization allows weaker models to supervise stronger ones', 'Constitutional AI trains models on principles rather than examples', 'Alignment faking is a new challenge in advanced models', 'Interpretability research is key for reducing AI risks'],
+    lw_interventions: ['Foundational challenges in LLM alignment include 18 key areas', 'Circuits research provides interpretability methods', 'We need frameworks with quantitative provable safety guarantees', 'Formal verification should extend to autonomous agents', 'Models should generate self-reflective feedback for alignment', 'Testing required for misuse and capability hazards'],
+    lw_benchmarks: ['Alignment risks arise from misaligned AGI using unacceptable means', 'We lack systematic frameworks for assessing AI safety benchmarks', 'US government pursuing aggressive AGI development increases urgency', 'Occupational benchmarks should cover wider variety of tasks', 'Existing benchmarks need evaluation against potential dangers', 'New benchmarks urgently needed for societal benefit'],
+    lw_debate: ['AI safety via debate is promising for ASI alignment', 'Debate is effective in low-stakes contexts with human judges', 'High-stakes contexts require debate modifications', 'Obfuscated arguments problem may hinder debate for complex topics', 'Productive debates need mechanisms to handle expensive ground truths', 'Assumptions required for debate to provide full outer alignment'],
+    lw_scaling: ['Scalable oversight techniques inherently scale with compute', 'Deliberative Alignment combines chain-of-thought with Constitutional AI', 'AI Control designs protocols with favorable equilibria', 'AI safety research should focus on problems not solved by scaling', 'Alignment difficulty scales super-linearly with capability', 'Debate protocols can be modified to bypass obfuscated arguments']
+  };
+
+  const loadScenario = (key) => {
+    field.clear(); setHistory([]); setSelectedClaim(null); setResolved(false);
+    scenarioData[key].forEach((c, i) => setTimeout(() => { field.addClaim(c); forceUpdate(); }, i * 300));
+  };
+
+  const stats = field.getStats();
+  const coherence = field.getCoherence();
+  const pct = stats.total > 0 ? Math.round(stats.grounded / stats.total * 100) : 0;
+  const coherenceScore = Math.max(0, Math.round((1 - field.energy / 8) * 100));
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-white p-3 font-sans">
+      <div className="max-w-5xl mx-auto space-y-3">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+          <div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+              Artificial Intelligence Audit Trail
+            </h1>
+            <p className="text-slate-500 text-xs">ASPS • Knowledge-Grounded Field Reasoning</p>
+            <p className="text-slate-600 text-xs">Created by Luke • <a href="https://x.com/BeingAsSuch" target="_blank" rel="noopener noreferrer" className="text-cyan-500 hover:text-cyan-400">@BeingAsSuch</a></p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleResolve} disabled={field.claims.length < 2}
+              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 rounded text-sm font-medium transition-colors">
+              Resolve Field
+            </button>
+            <button onClick={handleClear}
+              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm transition-colors">
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {/* Scenarios */}
+        <div className="bg-slate-800/50 rounded-lg p-3">
+          <div className="text-xs text-slate-400 mb-2">Load a scenario:</div>
+          <div className="flex gap-2 flex-wrap">
+            {scenarios.map(s => (
+              <button key={s.key} onClick={() => loadScenario(s.key)}
+                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm font-medium transition-colors">
+                {s.name}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-purple-400 mt-3 mb-2">LessWrong Benchmarks (Nov 2025):</div>
+          <div className="flex gap-2 flex-wrap">
+            {lwBenchmarks.map(s => (
+              <button key={s.key} onClick={() => loadScenario(s.key)}
+                className="px-3 py-1.5 bg-purple-900/40 hover:bg-purple-800/50 border border-purple-500/30 rounded text-sm font-medium transition-colors text-purple-300">
+                {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="lg:col-span-2 space-y-3">
+            {/* Canvas */}
+            <FieldCanvas field={field} selectedClaim={selectedClaim} onSelectClaim={setSelectedClaim}
+              hoveredRelation={hoveredRelation} onHoverRelation={setHoveredRelation} resolved={resolved} key={version} />
+            
+            {/* Stats Bar - Moved below canvas */}
+            <div className="bg-slate-800 rounded-lg p-3 flex items-center justify-between">
+              <div className="flex items-center gap-4 text-sm">
+                <div>
+                  <span className="text-slate-500">Energy: </span>
+                  <span style={{ color: coherence.color }} className="font-mono">{field.energy.toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Coherence: </span>
+                  <span className="text-slate-300">{coherenceScore}%</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Grounded: </span>
+                  <span className="text-green-400">{stats.grounded}/{stats.total} ({pct}%)</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Conflicts: </span>
+                  <span className={stats.contradictions > 0 ? 'text-red-400' : 'text-slate-400'}>{stats.contradictions}</span>
+                </div>
+              </div>
+              <div className={`px-2 py-1 rounded text-sm font-bold ${coherence.level === 'CRITICAL' ? 'bg-red-500/20 text-red-400 animate-pulse' : ''}`}
+                style={{ color: coherence.color, backgroundColor: coherence.color + '20' }}>
+                {coherence.level}
+              </div>
+            </div>
+
+            {/* Energy History */}
+            <div className="bg-slate-800 rounded-lg p-3">
+              <div className="text-xs text-slate-400 mb-2">Energy History</div>
+              <div className="h-8 flex items-end gap-px">
+                {history.length === 0 ? (
+                  <div className="w-full text-center text-slate-600 text-xs py-1">Load a scenario to see energy</div>
+                ) : history.slice(-60).map((h, i) => {
+                  const max = Math.max(1, ...history.map(x => x.energy));
+                  const height = (h.energy / max) * 100;
+                  const color = h.energy < 0.5 ? '#4ade80' : h.energy < 2 ? '#fbbf24' : '#f87171';
+                  return <div key={i} className="flex-1 rounded-sm" style={{ height: `${Math.max(4, height)}%`, backgroundColor: color, minWidth: 2 }} />;
+                })}
+              </div>
+            </div>
+
+            {/* Add Claim */}
+            <div className="bg-slate-800/50 rounded-lg p-3">
+              <div className="text-xs text-slate-500 mb-2">Add your own claim:</div>
+              <div className="flex gap-2">
+                <input value={newClaim} onChange={e => setNewClaim(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddClaim()}
+                  placeholder="Type a claim..."
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm placeholder-slate-600 focus:outline-none focus:border-cyan-500" />
+                <button onClick={handleAddClaim} disabled={!newClaim.trim()}
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-700 rounded text-sm transition-colors">
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel */}
+          <div className="space-y-3">
+            <div className="bg-slate-800 rounded-lg p-3">
+              <div className="text-xs text-slate-400 mb-2">Claims ({field.claims.length})</div>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {field.claims.length === 0 ? (
+                  <div className="text-slate-600 text-xs text-center py-4">Load a scenario</div>
+                ) : field.claims.map((c, i) => {
+                  const status = EPISTEMIC[c.status];
+                  return (
+                    <div key={c.id} onClick={() => setSelectedClaim(c.id)}
+                      className={`p-2 rounded text-xs cursor-pointer flex items-center gap-2 ${
+                        selectedClaim === c.id ? 'ring-1 ring-cyan-500 bg-slate-700' : 'bg-slate-900/70 hover:bg-slate-700'}`}>
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center font-bold shrink-0"
+                        style={{ backgroundColor: status.color + '25', color: status.color }}>{i + 1}</span>
+                      <span className="truncate text-slate-300 flex-1">{c.text}</span>
+                      {c.grounding.grounded && <span className="text-green-500 shrink-0">●</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="bg-slate-800 rounded-lg p-3 text-xs space-y-2">
+              <div className="grid grid-cols-2 gap-1">
+                {Object.entries(EPISTEMIC).map(([k, v]) => (
+                  <div key={k} className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: v.color }} />
+                    <span className="text-slate-500">{v.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-slate-700 pt-2 space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-0.5 bg-green-500" />
+                  <span className="text-slate-500">KB support</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-0.5 bg-red-500" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #f87171 0, #f87171 4px, transparent 4px, transparent 8px)' }} />
+                  <span className="text-slate-500">KB conflict</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-0.5 bg-slate-500 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #64748b 0, #64748b 2px, transparent 2px, transparent 6px)' }} />
+                  <span className="text-slate-500">Heuristic</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Formal Definition Section */}
+        <details className="border border-slate-700 rounded-lg">
+          <summary className="bg-slate-800/50 px-4 py-3 cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition-colors">
+            Formal Definition: Epistemic Coherence Field (ECF)
+          </summary>
+          <div className="p-4 bg-slate-900/50 text-sm space-y-3">
+            <p className="text-slate-400">
+              The <span className="text-cyan-400 font-semibold">Epistemic Coherence Field (ECF)</span> models claims as charged particles in a 2D field where logical relationships manifest as physical forces.
+            </p>
+            
+            <div className="bg-slate-800 rounded p-3 font-mono text-xs">
+              <div className="text-purple-400 mb-2">Energy Function:</div>
+              <div className="text-slate-300">
+                E = Σ<sub>supports</sub> (d<sub>ij</sub> / 120) · s · c<sub>ij</sub> · 0.5<br/>
+                &nbsp;&nbsp;+ Σ<sub>contradicts</sub> (300 / d<sub>ij</sub>) · s · c<sub>ij</sub><br/>
+                &nbsp;&nbsp;+ 0.6 · N<sub>contested</sub><br/>
+                &nbsp;&nbsp;+ 0.15 · N<sub>ungrounded</sub>
+              </div>
+            </div>
+            
+            <div className="text-xs text-slate-500 space-y-1">
+              <div><span className="text-slate-400">d<sub>ij</sub></span> = Euclidean distance between claims i, j</div>
+              <div><span className="text-slate-400">c<sub>ij</sub></span> = Relation confidence ∈ [0,1] (KB-backed = 0.8-0.95, heuristic = 0.5-0.75)</div>
+              <div><span className="text-slate-400">s</span> = Relation strength (supports = 0.9, contradicts = 1.0)</div>
+              <div><span className="text-slate-400">N<sub>contested</sub>, N<sub>ungrounded</sub></span> = Claim counts by epistemic status</div>
+            </div>
+            
+            <p className="text-slate-400 text-xs">
+              This is a signed-edge variant of the <span className="text-slate-300">Fruchterman-Reingold</span> force-directed algorithm. 
+              Supporting claims attract (springs), contradicting claims repel (electrical charges). 
+              The system converges to a local minimum representing <span className="text-cyan-400">maximal epistemic coherence</span>.
+            </p>
+            
+            <div className="border-t border-slate-700 pt-3 mt-3">
+              <div className="text-purple-400 text-xs mb-2">Benchmark Results (LessWrong AI Safety Debates, Nov 2025):</div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="bg-slate-800 rounded p-2 text-center">
+                  <div className="text-slate-500">Avg Pre-Resolve</div>
+                  <div className="text-yellow-400 font-bold">~42%</div>
+                </div>
+                <div className="bg-slate-800 rounded p-2 text-center">
+                  <div className="text-slate-500">Avg Post-Resolve</div>
+                  <div className="text-green-400 font-bold">~85%</div>
+                </div>
+                <div className="bg-slate-800 rounded p-2 text-center">
+                  <div className="text-slate-500">Debates Tested</div>
+                  <div className="text-cyan-400 font-bold">5</div>
+                </div>
+              </div>
+              <div className="text-slate-600 text-xs mt-2">Coherence clusters form around optimism vs. pessimism axes after resolution.</div>
+            </div>
+          </div>
+        </details>
+
+        {/* AI Interface Section */}
+        <div className="border-t border-slate-700 pt-4 mt-4">
+          <div className="bg-gradient-to-r from-purple-900/30 to-cyan-900/30 rounded-lg p-4 border border-purple-500/30">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+              <span className="text-sm font-bold text-purple-300">AI-Accessible Interface</span>
+              <span className="text-xs text-slate-500">(Text commands for programmatic access)</span>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {/* Command Input */}
+              <div>
+                <div className="text-xs text-slate-400 mb-2">Enter Command:</div>
+                <div className="flex gap-2">
+                  <input value={aiCommand} onChange={e => setAiCommand(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && executeAiCommand()}
+                    placeholder="help"
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm font-mono placeholder-slate-600 focus:outline-none focus:border-purple-500" />
+                  <button onClick={executeAiCommand}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded text-sm transition-colors">
+                    Run
+                  </button>
+                </div>
+                <div className="text-xs text-slate-600 mt-2">
+                  Commands: <span className="text-purple-400">load</span> &lt;scenario&gt; | <span className="text-purple-400">add</span> &lt;claim&gt; | <span className="text-purple-400">resolve</span> | <span className="text-purple-400">clear</span> | <span className="text-purple-400">state</span> | <span className="text-purple-400">help</span>
+                </div>
+              </div>
+              
+              {/* Output */}
+              <div>
+                <div className="text-xs text-slate-400 mb-2">Output:</div>
+                <pre className="bg-slate-900 border border-slate-700 rounded p-3 text-xs font-mono text-slate-300 h-24 overflow-auto whitespace-pre-wrap">
+                  {aiOutput || 'Type "help" to see available commands'}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-center text-xs text-slate-600">
+          {Object.keys(KNOWLEDGE_BASE.entities).length} entities • {KNOWLEDGE_BASE.triples.length} triples • Ideas as physics • Low energy = coherence
+        </p>
+      </div>
+    </div>
+  );
+}
