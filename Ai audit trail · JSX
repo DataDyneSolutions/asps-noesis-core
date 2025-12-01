@@ -349,8 +349,11 @@ class NoesisField {
     return base * kbMult * typeMult;
   }
 
-  computeEnergy() {
+  computeEnergy(stance = 'coherentist') {
     let energy = 0;
+    const weights = stance === 'foundationalist' 
+      ? { contested: 0.2, ungrounded: 0.9 }
+      : { contested: 0.6, ungrounded: 0.15 };
     this.relations.forEach(r => {
       const c1 = this.claims[r.from], c2 = this.claims[r.to];
       if (!c1 || !c2) return;
@@ -360,13 +363,13 @@ class NoesisField {
       if (rel.attract) energy += (dist / 120) * strength * r.confidence * 0.5;
       else energy += (300 / dist) * strength * r.confidence;
     });
-    this.claims.filter(c => c.status === 'CONTESTED').forEach(() => { energy += 0.6; });
-    this.claims.filter(c => c.status === 'UNGROUNDED').forEach(() => { energy += 0.15; });
+    this.claims.filter(c => c.status === 'CONTESTED').forEach(() => { energy += weights.contested; });
+    this.claims.filter(c => c.status === 'UNGROUNDED').forEach(() => { energy += weights.ungrounded; });
     this.energy = Math.max(0, energy);
     return this.energy;
   }
 
-  physicsStep(multiplier = 1) {
+  physicsStep(multiplier = 1, stance = 'coherentist') {
     const damping = 0.9, centerX = 250, centerY = 125, centerPull = 0.012, nodeRepulsion = 4000;
     this.claims.forEach((c1, i) => {
       let fx = 0, fy = 0;
@@ -390,10 +393,10 @@ class NoesisField {
       c1.vx = (c1.vx + fx * 0.016) * damping; c1.vy = (c1.vy + fy * 0.016) * damping;
       c1.x = Math.max(45, Math.min(455, c1.x + c1.vx)); c1.y = Math.max(30, Math.min(220, c1.y + c1.vy));
     });
-    return this.computeEnergy();
+    return this.computeEnergy(stance);
   }
 
-  resolve() { for (let i = 0; i < 200; i++) this.physicsStep(3); return this.computeEnergy(); }
+  resolve(stance = 'coherentist') { for (let i = 0; i < 200; i++) this.physicsStep(3, stance); return this.computeEnergy(stance); }
 
   runCounterfactual(claimId, mode = 'remove') {
     const originalEnergy = this.energy;
@@ -471,7 +474,7 @@ class NoesisField {
 // CANVAS
 // ============================================================================
 
-const FieldCanvas = ({ field, selectedClaim, onSelectClaim, hoveredRelation, onHoverRelation, resolved, showDirected }) => {
+const FieldCanvas = ({ field, selectedClaim, onSelectClaim, hoveredRelation, onHoverRelation, resolved, showDirected, stance }) => {
   const canvasRef = useRef(null);
   const [pulsePhase, setPulsePhase] = useState(0);
   
@@ -511,7 +514,7 @@ const FieldCanvas = ({ field, selectedClaim, onSelectClaim, hoveredRelation, onH
       for (let i = 0; i < W; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke(); }
       for (let i = 0; i < H; i += 40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke(); }
       
-      if (!resolved) field.physicsStep();
+      if (!resolved) field.physicsStep(1, stance);
       
       field.relations.forEach((r, idx) => {
         const c1 = field.claims[r.from], c2 = field.claims[r.to];
@@ -557,7 +560,7 @@ const FieldCanvas = ({ field, selectedClaim, onSelectClaim, hoveredRelation, onH
     };
     draw();
     return () => cancelAnimationFrame(animId);
-  }, [field, selectedClaim, hoveredRelation, pulsePhase, resolved, showDirected]);
+  }, [field, selectedClaim, hoveredRelation, pulsePhase, resolved, showDirected, stance]);
   
   const handleClick = (e) => { const rect = canvasRef.current.getBoundingClientRect(); const x = (e.clientX - rect.left) * (500 / rect.width); const y = (e.clientY - rect.top) * (250 / rect.height); const clicked = field.claims.find(c => Math.sqrt((c.x-x)**2 + (c.y-y)**2) < 30); onSelectClaim(clicked ? clicked.id : null); };
   const handleMouseMove = (e) => { const rect = canvasRef.current.getBoundingClientRect(); const x = (e.clientX - rect.left) * (500 / rect.width); const y = (e.clientY - rect.top) * (250 / rect.height); let foundIdx = null; field.relations.forEach((r, idx) => { const c1 = field.claims[r.from], c2 = field.claims[r.to]; if (!c1 || !c2) return; const mx = (c1.x + c2.x) / 2, my = (c1.y + c2.y) / 2; if (Math.sqrt((mx-x)**2 + (my-y)**2) < 20) foundIdx = idx; }); onHoverRelation(foundIdx); };
@@ -610,21 +613,22 @@ export default function AIAuditTrail() {
   const [hoveredRelation, setHoveredRelation] = useState(null);
   const [history, setHistory] = useState([]);
   const [resolved, setResolved] = useState(false);
-  const [aiCommand, setAiCommand] = useState('');
-  const [aiOutput, setAiOutput] = useState('');
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [showDirected, setShowDirected] = useState(false);
   const [priors, setPriors] = useState({ kbMultiplier: 1.0, contradictStrength: 1.0, supportStrength: 1.0 });
   const [counterfactualResult, setCounterfactualResult] = useState(null);
+  const [activeScenario, setActiveScenario] = useState(null);
+  const [epistemicStance, setEpistemicStance] = useState('coherentist');
 
   const forceUpdate = useCallback(() => setVersion(v => v + 1), []);
 
   useEffect(() => { field.setPriors(priors); forceUpdate(); }, [priors, field, forceUpdate]);
+  useEffect(() => { field.computeEnergy(epistemicStance); setResolved(false); forceUpdate(); }, [epistemicStance, field, forceUpdate]);
   useEffect(() => { const interval = setInterval(() => { if (field.claims.length > 0 && !resolved) setHistory(h => [...h.slice(-50), { energy: field.energy, t: Date.now() }]); }, 250); return () => clearInterval(interval); }, [field, resolved]);
 
   const handleAddClaim = useCallback(() => { if (!newClaim.trim()) return; setResolved(false); setCounterfactualResult(null); field.addClaim(newClaim); setNewClaim(''); forceUpdate(); }, [field, newClaim, forceUpdate]);
-  const handleResolve = useCallback(() => { field.resolve(); setResolved(true); forceUpdate(); }, [field, forceUpdate]);
-  const handleClear = useCallback(() => { field.clear(); setHistory([]); setSelectedClaim(null); setResolved(false); setCounterfactualResult(null); forceUpdate(); }, [field, forceUpdate]);
+  const handleResolve = useCallback(() => { field.resolve(epistemicStance); setResolved(true); forceUpdate(); }, [field, forceUpdate, epistemicStance]);
+  const handleClear = useCallback(() => { field.clear(); setHistory([]); setSelectedClaim(null); setResolved(false); setCounterfactualResult(null); setActiveScenario(null); forceUpdate(); }, [field, forceUpdate]);
   const handleCounterfactual = useCallback((mode) => { if (selectedClaim === null) return; const result = field.runCounterfactual(selectedClaim, mode); setCounterfactualResult({ ...result, mode, claimId: selectedClaim }); }, [field, selectedClaim]);
   const handleMouseMove = (e) => { setTooltipPos({ x: e.clientX, y: e.clientY }); };
 
@@ -644,22 +648,7 @@ export default function AIAuditTrail() {
   const scenarios = [{ name: 'Einstein vs Bohr', key: 'einstein' }, { name: 'Free Will', key: 'freewill' }, { name: 'AI Consciousness', key: 'ai' }, { name: 'Climate', key: 'climate' }, { name: 'AI Alignment', key: 'alignment' }];
   const lwBenchmarks = [{ name: 'LW: Safety Roadmap', key: 'lw_roadmap' }, { name: 'LW: Interventions', key: 'lw_interventions' }, { name: 'LW: Benchmarks 2025', key: 'lw_benchmarks' }, { name: 'LW: Debate Safety', key: 'lw_debate' }, { name: 'LW: Scaling', key: 'lw_scaling' }];
 
-  const loadScenario = (key) => { field.clear(); setHistory([]); setSelectedClaim(null); setResolved(false); setCounterfactualResult(null); scenarioData[key].forEach((c, i) => setTimeout(() => { field.addClaim(c); forceUpdate(); }, i * 300)); };
-
-  const executeAiCommand = useCallback(() => {
-    const cmd = aiCommand.trim().toLowerCase();
-    let output = '';
-    if (cmd.startsWith('load ')) { const scenario = cmd.slice(5).trim(); const claims = scenarioData[scenario]; if (claims) { field.clear(); setHistory([]); setResolved(false); setCounterfactualResult(null); claims.forEach(c => field.addClaim(c)); forceUpdate(); output = `Loaded ${scenario} with ${claims.length} claims.`; } else { output = `Unknown. Available: einstein, freewill, ai, climate, alignment, lw_roadmap, lw_interventions, lw_benchmarks, lw_debate, lw_scaling`; } }
-    else if (cmd.startsWith('add ')) { setResolved(false); setCounterfactualResult(null); field.addClaim(aiCommand.slice(4).trim()); forceUpdate(); output = `Added claim.`; }
-    else if (cmd === 'resolve') { field.resolve(); setResolved(true); forceUpdate(); output = `Resolved. E=${field.energy.toFixed(3)}, ${field.getCoherence().level}`; }
-    else if (cmd === 'clear') { field.clear(); setHistory([]); setSelectedClaim(null); setResolved(false); setCounterfactualResult(null); forceUpdate(); output = 'Cleared.'; }
-    else if (cmd === 'state') { output = JSON.stringify(field.getFieldState(), null, 2); }
-    else if (cmd.startsWith('counterfactual ')) { const parts = cmd.slice(15).split(' '); const id = parseInt(parts[0]) - 1; const mode = parts[1] || 'remove'; if (id >= 0 && id < field.claims.length) { const result = field.runCounterfactual(id, mode); output = `ΔE=${result.deltaE > 0 ? '+' : ''}${result.deltaE.toFixed(3)}, Fragility: ${result.fragility}`; } else { output = 'Invalid ID'; } }
-    else if (cmd.startsWith('priors ')) { const parts = cmd.slice(7).split(' '); const newPriors = { ...priors }; parts.forEach(p => { const [k, v] = p.split('='); if (k === 'kb') newPriors.kbMultiplier = parseFloat(v); if (k === 'contra') newPriors.contradictStrength = parseFloat(v); if (k === 'support') newPriors.supportStrength = parseFloat(v); }); setPriors(newPriors); output = `Priors: KB=${newPriors.kbMultiplier}, C=${newPriors.contradictStrength}, S=${newPriors.supportStrength}`; }
-    else if (cmd === 'help') { output = `load <scenario> | add <claim> | resolve | clear | state | counterfactual <id> <remove|negate> | priors kb=X contra=Y support=Z`; }
-    else { output = 'Unknown. Type "help"'; }
-    setAiOutput(output); setAiCommand('');
-  }, [aiCommand, field, forceUpdate, priors, scenarioData]);
+  const loadScenario = (key) => { field.clear(); setHistory([]); setSelectedClaim(null); setResolved(false); setCounterfactualResult(null); setActiveScenario(key); scenarioData[key].forEach((c, i) => setTimeout(() => { field.addClaim(c); forceUpdate(); }, i * 300)); };
 
   const stats = field.getStats();
   const coherence = field.getCoherence();
@@ -672,8 +661,8 @@ export default function AIAuditTrail() {
         <div className="flex items-center justify-between border-b border-slate-700 pb-2">
           <div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">Artificial Intelligence Audit Trail</h1>
-            <p className="text-slate-500 text-xs">ASPS • Epistemic Coherence Field (ECF)</p>
-            <p className="text-slate-600 text-xs">Created by Luke • <a href="https://x.com/BeingAsSuch" target="_blank" rel="noopener noreferrer" className="text-cyan-500 hover:text-cyan-400">@BeingAsSuch</a></p>
+            <p className="text-slate-500 text-xs">AIAT • Epistemic Coherence Field (ECF)</p>
+            <p className="text-slate-600 text-xs">© 2025 Luke (<a href="https://x.com/BeingAsSuch" target="_blank" rel="noopener noreferrer" className="text-cyan-500 hover:text-cyan-400">@BeingAsSuch</a>) • <a href="https://github.com/DataDyneSolutions/asps-noesis-core" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-slate-400">GitHub: DataDyneSolutions/asps-noesis-core</a></p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={handleResolve} disabled={field.claims.length < 2} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 rounded text-sm font-medium transition-colors">Resolve Field</button>
@@ -683,15 +672,15 @@ export default function AIAuditTrail() {
 
         <div className="bg-slate-800/50 rounded-lg p-3">
           <div className="text-xs text-slate-400 mb-2">Load a scenario:</div>
-          <div className="flex gap-2 flex-wrap">{scenarios.map(s => <button key={s.key} onClick={() => loadScenario(s.key)} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-sm font-medium transition-colors">{s.name}</button>)}</div>
+          <div className="flex gap-2 flex-wrap">{scenarios.map(s => <button key={s.key} onClick={() => loadScenario(s.key)} className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${activeScenario === s.key ? 'bg-cyan-600 ring-2 ring-cyan-400' : 'bg-slate-700 hover:bg-slate-600'}`}>{s.name}</button>)}</div>
           <div className="text-xs text-purple-400 mt-3 mb-2">LessWrong Benchmarks (Nov 2025):</div>
-          <div className="flex gap-2 flex-wrap">{lwBenchmarks.map(s => <button key={s.key} onClick={() => loadScenario(s.key)} className="px-3 py-1.5 bg-purple-900/40 hover:bg-purple-800/50 border border-purple-500/30 rounded text-sm font-medium transition-colors text-purple-300">{s.name}</button>)}</div>
+          <div className="flex gap-2 flex-wrap">{lwBenchmarks.map(s => <button key={s.key} onClick={() => loadScenario(s.key)} className={`px-3 py-1.5 border rounded text-sm font-medium transition-colors ${activeScenario === s.key ? 'bg-purple-600 border-purple-400 ring-2 ring-purple-400 text-white' : 'bg-purple-900/40 hover:bg-purple-800/50 border-purple-500/30 text-purple-300'}`}>{s.name}</button>)}</div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           <div className="lg:col-span-2 space-y-3">
             <div className="relative">
-              <FieldCanvas field={field} selectedClaim={selectedClaim} onSelectClaim={setSelectedClaim} hoveredRelation={hoveredRelation} onHoverRelation={setHoveredRelation} resolved={resolved} showDirected={showDirected} key={version} />
+              <FieldCanvas field={field} selectedClaim={selectedClaim} onSelectClaim={setSelectedClaim} hoveredRelation={hoveredRelation} onHoverRelation={setHoveredRelation} resolved={resolved} showDirected={showDirected} stance={epistemicStance} key={version} />
               {hoveredRelation !== null && field.relations[hoveredRelation] && <Tooltip relation={field.relations[hoveredRelation]} position={tooltipPos} />}
             </div>
             
@@ -711,9 +700,23 @@ export default function AIAuditTrail() {
               <div className="h-8 flex items-end gap-px">{history.length === 0 ? <div className="w-full text-center text-slate-600 text-xs py-1">Load a scenario</div> : history.slice(-60).map((h, i) => { const max = Math.max(1, ...history.map(x => x.energy)); const height = (h.energy / max) * 100; const color = h.energy < 0.5 ? '#4ade80' : h.energy < 2 ? '#fbbf24' : '#f87171'; return <div key={i} className="flex-1 rounded-sm" style={{ height: `${Math.max(4, height)}%`, backgroundColor: color, minWidth: 2 }} />; })}</div>
             </div>
 
-            <details className="bg-slate-800 rounded-lg">
+            <details className="bg-slate-800 rounded-lg" open>
               <summary className="px-3 py-2 cursor-pointer text-sm text-slate-400 hover:text-white">⚙️ Tune Priors & Settings</summary>
               <div className="p-3 border-t border-slate-700 space-y-3">
+                <div>
+                  <label className="text-xs text-slate-500 block mb-2">Epistemic Stance:</label>
+                  <div className="flex gap-2">
+                    <button onClick={() => setEpistemicStance('coherentist')} className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${epistemicStance === 'coherentist' ? 'bg-cyan-600 ring-2 ring-cyan-400' : 'bg-slate-700 hover:bg-slate-600'}`}>
+                      <div>Coherentist</div>
+                      <div className="text-xs opacity-70">Penalize conflict</div>
+                    </button>
+                    <button onClick={() => setEpistemicStance('foundationalist')} className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${epistemicStance === 'foundationalist' ? 'bg-orange-600 ring-2 ring-orange-400' : 'bg-slate-700 hover:bg-slate-600'}`}>
+                      <div>Foundationalist</div>
+                      <div className="text-xs opacity-70">Penalize ungrounded</div>
+                    </button>
+                  </div>
+                  <div className="text-xs text-slate-600 mt-1">{epistemicStance === 'coherentist' ? 'Contested: 0.6 | Ungrounded: 0.15 — Optimizes for internal consistency' : 'Contested: 0.2 | Ungrounded: 0.9 — Optimizes for evidential grounding'}</div>
+                </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div><label className="text-xs text-slate-500 block mb-1">KB Multiplier: {priors.kbMultiplier.toFixed(2)}</label><input type="range" min="0.5" max="1.5" step="0.1" value={priors.kbMultiplier} onChange={e => setPriors(p => ({ ...p, kbMultiplier: parseFloat(e.target.value) }))} className="w-full accent-cyan-500" /></div>
                   <div><label className="text-xs text-slate-500 block mb-1">Contradict: {priors.contradictStrength.toFixed(2)}</label><input type="range" min="0.5" max="1.5" step="0.1" value={priors.contradictStrength} onChange={e => setPriors(p => ({ ...p, contradictStrength: parseFloat(e.target.value) }))} className="w-full accent-red-500" /></div>
@@ -769,13 +772,14 @@ export default function AIAuditTrail() {
           </div>
         </div>
 
-        <details className="border border-slate-700 rounded-lg">
+        <details className="border border-slate-700 rounded-lg" open>
           <summary className="bg-slate-800/50 px-4 py-3 cursor-pointer text-sm font-medium text-slate-300 hover:text-white">Formal Definition: Epistemic Coherence Field (ECF)</summary>
           <div className="p-4 bg-slate-900/50 text-sm space-y-3">
             <p className="text-slate-400">The <span className="text-cyan-400 font-semibold">Epistemic Coherence Field (ECF)</span> models claims as charged particles where logical relationships manifest as physical forces.</p>
             <div className="bg-slate-800 rounded p-3 font-mono text-xs">
               <div className="text-purple-400 mb-2">Energy Function:</div>
-              <div className="text-slate-300">E = Σ<sub>supports</sub> (d<sub>ij</sub> / 120) · s · c<sub>ij</sub> · k<sub>s</sub> · 0.5<br/>&nbsp;&nbsp;+ Σ<sub>contradicts</sub> (300 / d<sub>ij</sub>) · s · c<sub>ij</sub> · k<sub>c</sub><br/>&nbsp;&nbsp;+ 0.6 · N<sub>contested</sub> + 0.15 · N<sub>ungrounded</sub></div>
+              <div className="text-slate-300">E = Σ<sub>supports</sub> (d<sub>ij</sub> / 120) · s · c<sub>ij</sub> · k<sub>s</sub> · 0.5<br/>&nbsp;&nbsp;+ Σ<sub>contradicts</sub> (300 / d<sub>ij</sub>) · s · c<sub>ij</sub> · k<sub>c</sub><br/>&nbsp;&nbsp;+ w<sub>c</sub> · N<sub>contested</sub> + w<sub>u</sub> · N<sub>ungrounded</sub></div>
+              <div className="mt-2 text-slate-500">Coherentist: w<sub>c</sub>=0.6, w<sub>u</sub>=0.15 | Foundationalist: w<sub>c</sub>=0.2, w<sub>u</sub>=0.9</div>
             </div>
             <div className="text-xs text-slate-500 space-y-1">
               <div><span className="text-slate-400">d<sub>ij</sub></span> = Euclidean distance</div>
@@ -793,21 +797,7 @@ export default function AIAuditTrail() {
           </div>
         </details>
 
-        <div className="border-t border-slate-700 pt-4">
-          <div className="bg-gradient-to-r from-purple-900/30 to-cyan-900/30 rounded-lg p-4 border border-purple-500/30">
-            <div className="flex items-center gap-2 mb-3"><div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" /><span className="text-sm font-bold text-purple-300">AI-Accessible Interface</span></div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <div>
-                <div className="text-xs text-slate-400 mb-2">Command:</div>
-                <div className="flex gap-2"><input value={aiCommand} onChange={e => setAiCommand(e.target.value)} onKeyDown={e => e.key === 'Enter' && executeAiCommand()} placeholder="help" className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm font-mono placeholder-slate-600 focus:outline-none focus:border-purple-500" /><button onClick={executeAiCommand} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded text-sm transition-colors">Run</button></div>
-                <div className="text-xs text-slate-600 mt-2"><span className="text-purple-400">load</span> | <span className="text-purple-400">add</span> | <span className="text-purple-400">resolve</span> | <span className="text-purple-400">counterfactual</span> | <span className="text-purple-400">priors</span> | <span className="text-purple-400">state</span></div>
-              </div>
-              <div><div className="text-xs text-slate-400 mb-2">Output:</div><pre className="bg-slate-900 border border-slate-700 rounded p-3 text-xs font-mono text-slate-300 h-20 overflow-auto whitespace-pre-wrap">{aiOutput || 'Type "help"'}</pre></div>
-            </div>
-          </div>
-        </div>
-
-        <p className="text-center text-xs text-slate-600">{Object.keys(KNOWLEDGE_BASE.entities).length} entities • {KNOWLEDGE_BASE.triples.length} triples • ECF v6</p>
+        <p className="text-center text-xs text-slate-600">{Object.keys(KNOWLEDGE_BASE.entities).length} entities • {KNOWLEDGE_BASE.triples.length} triples • AIAT/ECF v6 • © 2025 Luke @BeingAsSuch</p>
       </div>
     </div>
   );
